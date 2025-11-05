@@ -5,18 +5,17 @@ WORKDIR /app
 # Install poetry
 RUN pip install --no-cache-dir poetry
 
-# Copy poetry files
-COPY platform/pylib/pyproject.toml platform/pylib/poetry.lock ./platform/pylib/
-COPY services/tools/pyproject.toml services/tools/poetry.lock ./services/tools/
+# Copy platform library source first (needed for path dependency)
+COPY platform/pylib/ ./platform/pylib/
+
+# Copy tools service files
+COPY services/tools/pyproject.toml services/tools/poetry.lock services/tools/README.md ./services/tools/
+COPY services/tools/app ./services/tools/app
 
 # Install dependencies (including watchdog for hot reload)
 RUN cd platform/pylib && poetry config virtualenvs.create false && poetry install --no-root
 RUN cd services/tools && poetry config virtualenvs.create false && poetry install --no-root
 RUN pip install --no-cache-dir watchdog
-
-# Copy source code (will be volume mounted for hot reload)
-COPY platform/pylib/scout_common ./platform/pylib/scout_common
-COPY services/tools/app ./services/tools/app
 
 WORKDIR /app/services/tools
 

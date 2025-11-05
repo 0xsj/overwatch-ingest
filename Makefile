@@ -110,3 +110,87 @@ docker-clean: ## Remove all containers, volumes, and images
 	@echo "Cleaning up Docker resources..."
 	@cd deployments/docker && docker-compose -f docker-compose.infra.yml -f docker-compose.yml down -v
 	@docker system prune -f
+
+# Kubernetes Commands
+k8s-cluster-create: ## Create kind cluster
+	@echo "Creating kind cluster..."
+	@kind create cluster --config deployments/k8s/kind-config.yaml
+	@echo "Cluster created! Switching context..."
+	@kubectl cluster-info --context kind-scout-local
+
+k8s-cluster-delete: ## Delete kind cluster
+	@echo "Deleting kind cluster..."
+	@kind delete cluster --name scout-local
+
+k8s-cluster-info: ## Show cluster info
+	@kubectl cluster-info --context kind-scout-local
+	@echo ""
+	@kubectl get nodes
+
+k8s-build-images: ## Build Docker images for K8s
+	@echo "Building Docker images..."
+	@docker build -t scout/gateway:latest -f deployments/docker/Dockerfile.gateway .
+	@docker build -t scout/agents:latest -f deployments/docker/Dockerfile.agents .
+	@docker build -t scout/incidents:latest -f deployments/docker/Dockerfile.incidents .
+	@docker build -t scout/tools:latest -f deployments/docker/Dockerfile.tools .
+	@docker build -t scout/analytics:latest -f deployments/docker/Dockerfile.analytics .
+	@echo "Loading images into kind cluster..."
+	@kind load docker-image scout/gateway:latest --name scout-local
+	@kind load docker-image scout/agents:latest --name scout-local
+	@kind load docker-image scout/incidents:latest --name scout-local
+	@kind load docker-image scout/tools:latest --name scout-local
+	@kind load docker-image scout/analytics:latest --name scout-local
+	@echo "Images loaded into cluster!"
+
+k8s-apply: ## Apply all K8s manifests
+	@echo "Applying Kubernetes manifests..."
+	@kubectl apply -f deployments/k8s/base/namespace.yaml
+	@kubectl apply -f deployments/k8s/base/gateway/
+	@kubectl apply -f deployments/k8s/base/agents/
+	@kubectl apply -f deployments/k8s/base/incidents/
+	@kubectl apply -f deployments/k8s/base/tools/
+	@kubectl apply -f deployments/k8s/base/analytics/
+	@echo "Manifests applied!"
+
+k8s-delete: ## Delete all K8s resources
+	@echo "Deleting Kubernetes resources..."
+	@kubectl delete -f deployments/k8s/base/analytics/ --ignore-not-found=true
+	@kubectl delete -f deployments/k8s/base/tools/ --ignore-not-found=true
+	@kubectl delete -f deployments/k8s/base/incidents/ --ignore-not-found=true
+	@kubectl delete -f deployments/k8s/base/agents/ --ignore-not-found=true
+	@kubectl delete -f deployments/k8s/base/gateway/ --ignore-not-found=true
+	@kubectl delete -f deployments/k8s/base/namespace.yaml --ignore-not-found=true
+
+k8s-status: ## Show status of all resources
+	@echo "=== Namespaces ==="
+	@kubectl get namespaces
+	@echo ""
+	@echo "=== Pods ==="
+	@kubectl get pods -n scout
+	@echo ""
+	@echo "=== Services ==="
+	@kubectl get services -n scout
+	@echo ""
+	@echo "=== Deployments ==="
+	@kubectl get deployments -n scout
+
+k8s-logs: ## Tail logs from a specific service (usage: make k8s-logs SERVICE=gateway)
+	@kubectl logs -f -n scout -l app=$(SERVICE) --all-containers=true
+
+k8s-logs-all: ## Tail logs from all services
+	@kubectl logs -f -n scout --all-containers=true --max-log-requests=10
+
+k8s-restart: ## Restart a specific deployment (usage: make k8s-restart SERVICE=gateway)
+	@kubectl rollout restart deployment/$(SERVICE) -n scout
+
+k8s-restart-all: ## Restart all deployments
+	@kubectl rollout restart deployment -n scout
+
+k8s-describe: ## Describe a pod (usage: make k8s-describe SERVICE=gateway)
+	@kubectl describe pod -n scout -l app=$(SERVICE)
+
+k8s-shell: ## Get shell in a pod (usage: make k8s-shell SERVICE=gateway)
+	@kubectl exec -it -n scout $$(kubectl get pod -n scout -l app=$(SERVICE) -o jsonpath='{.items[0].metadata.name}') -- /bin/sh
+
+k8s-port-forward: ## Port forward to a service (usage: make k8s-port-forward SERVICE=gateway PORT=8080)
+	@kubectl port-forward -n scout service/$(SERVICE) $(PORT):$(PORT)
