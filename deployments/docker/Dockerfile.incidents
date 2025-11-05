@@ -1,0 +1,32 @@
+# Build stage
+FROM golang:1.25.3-alpine AS builder
+
+WORKDIR /app
+
+# Install air for hot reload
+RUN go install github.com/air-verse/air@latest
+
+# Copy go modules
+COPY go.work go.work.sum ./
+COPY platform/pkg/go.mod platform/pkg/go.sum ./platform/pkg/
+COPY services/incidents/go.mod services/incidents/go.sum ./services/incidents/
+
+# Download dependencies
+RUN go mod download
+
+# Development stage with hot reload
+FROM golang:1.25.3-alpine AS development
+
+WORKDIR /app
+
+# Install air
+RUN go install github.com/air-verse/air@latest
+
+# Copy source code (will be volume mounted for hot reload)
+COPY --from=builder /go/pkg /go/pkg
+
+# Expose ports
+EXPOSE 8082
+
+# Run with air for hot reload
+CMD ["air", "-c", "services/incidents/.air.toml"]
