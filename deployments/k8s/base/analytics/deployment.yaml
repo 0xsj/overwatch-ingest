@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics
+  namespace: scout
+  labels:
+    app: analytics
+    component: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: analytics
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: analytics
+        component: worker
+    spec:
+      containers:
+        - name: analytics
+          image: scout/analytics:latest
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 8084
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: analytics-config
+          env:
+            - name: POSTGRES_PASSWORD
+              value: "scout_dev_password"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8084
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8084
+            initialDelaySeconds: 5
+            periodSeconds: 5
