@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agents
+  namespace: scout
+  labels:
+    app: agents
+    component: server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agents
+      component: server
+  template:
+    metadata:
+      labels:
+        app: agents
+        component: server
+    spec:
+      containers:
+        - name: agents
+          image: scout/agents:latest
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 8081
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: agents-config
+          env:
+            - name: POSTGRES_PASSWORD
+              value: "scout_dev_password"
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8081
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 5

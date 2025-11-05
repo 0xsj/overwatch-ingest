@@ -1,0 +1,56 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'scout-local'
+    replica: 'prometheus-1'
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Gateway service
+  - job_name: 'gateway'
+    static_configs:
+      - targets: ['gateway:8080']
+    metrics_path: '/metrics'
+
+  # Agents service
+  - job_name: 'agents'
+    static_configs:
+      - targets: ['agents:8081']
+    metrics_path: '/metrics'
+
+  # Incidents service
+  - job_name: 'incidents'
+    static_configs:
+      - targets: ['incidents:8082']
+    metrics_path: '/metrics'
+
+  # Tools service
+  - job_name: 'tools'
+    static_configs:
+      - targets: ['tools:8083']
+    metrics_path: '/metrics'
+
+  # Analytics service
+  - job_name: 'analytics'
+    static_configs:
+      - targets: ['analytics:8084']
+    metrics_path: '/metrics'
+
+  # OTEL Collector metrics
+  - job_name: 'otel-collector'
+    static_configs:
+      - targets: ['otel-collector:8888']
+
+  # Infrastructure services
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']

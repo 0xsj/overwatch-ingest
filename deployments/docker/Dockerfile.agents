@@ -1,0 +1,31 @@
+# Build stage
+FROM golang:1.25.3-alpine AS builder
+
+WORKDIR /app
+
+# Copy go workspace
+COPY go.work go.work.su[m] ./
+
+# Copy all Go modules (workspace needs all of them)
+COPY platform/pkg/ ./platform/pkg/
+COPY gateway/ ./gateway/
+COPY services/agents/ ./services/agents/
+COPY services/incidents/ ./services/incidents/
+
+# Download dependencies
+RUN go mod download
+
+# Build the binary
+RUN CGO_ENABLED=0 GOOS=linux go build -o /agents ./services/agents/cmd/server/main.go
+
+# Runtime stage
+FROM alpine:latest
+
+WORKDIR /app
+
+# Copy binary from builder
+COPY --from=builder /agents /app/agents
+
+EXPOSE 8081
+
+CMD ["/app/agents"]

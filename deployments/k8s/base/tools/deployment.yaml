@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tools
+  namespace: scout
+  labels:
+    app: tools
+    component: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tools
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: tools
+        component: worker
+    spec:
+      containers:
+        - name: tools
+          image: scout/tools:latest
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 8083
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: tools-config
+          env:
+            - name: POSTGRES_PASSWORD
+              value: "scout_dev_password"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8083
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8083
+            initialDelaySeconds: 5
+            periodSeconds: 5

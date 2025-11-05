@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: incidents
+  namespace: scout
+  labels:
+    app: incidents
+    component: server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: incidents
+      component: server
+  template:
+    metadata:
+      labels:
+        app: incidents
+        component: server
+    spec:
+      containers:
+        - name: incidents
+          image: scout/incidents:latest
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 8082
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: incidents-config
+          env:
+            - name: POSTGRES_PASSWORD
+              value: "scout_dev_password"
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8082
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8082
+            initialDelaySeconds: 5
+            periodSeconds: 5
