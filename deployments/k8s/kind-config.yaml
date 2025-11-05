@@ -1,0 +1,40 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: scout-local
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    extraPortMappings:
+      # Gateway
+      - containerPort: 30080
+        hostPort: 8080
+        protocol: TCP
+      # Agents
+      - containerPort: 30081
+        hostPort: 8081
+        protocol: TCP
+      # Incidents
+      - containerPort: 30082
+        hostPort: 8082
+        protocol: TCP
+      # Tools
+      - containerPort: 30083
+        hostPort: 8083
+        protocol: TCP
+      # Analytics
+      - containerPort: 30084
+        hostPort: 8084
+        protocol: TCP
+      # Ingress HTTP
+      - containerPort: 80
+        hostPort: 80
+        protocol: TCP
+      # Ingress HTTPS
+      - containerPort: 443
+        hostPort: 443
+        protocol: TCP
