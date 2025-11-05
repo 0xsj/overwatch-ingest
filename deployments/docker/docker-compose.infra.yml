@@ -1,5 +1,4 @@
-version: '3.8'
-
+name: scout
 services:
   # PostgreSQL
   postgres:
@@ -66,12 +65,10 @@ services:
       timeout: 10s
       retries: 5
 
-  # Jaeger (Distributed Tracing)
+  # Jaeger (Distributed Tracing) - remove OTLP ports to avoid conflict
   jaeger:
     image: jaegertracing/all-in-one:1.52
     container_name: scout-jaeger
-    environment:
-      COLLECTOR_OTLP_ENABLED: "true"
     ports:
       - "5775:5775/udp"   # Zipkin compact thrift
       - "6831:6831/udp"   # Jaeger compact thrift
@@ -80,8 +77,7 @@ services:
       - "16686:16686"     # Jaeger UI
       - "14268:14268"     # Jaeger collector HTTP
       - "14250:14250"     # Jaeger gRPC
-      - "4317:4317"       # OTLP gRPC
-      - "4318:4318"       # OTLP HTTP
+      # Removed 4317 and 4318 - OTEL Collector will handle these
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:14269/"]
       interval: 10s
@@ -134,17 +130,17 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.91.0
     container_name: scout-otel-collector
-    command: ["--config=/etc/otel-collector-config.yml"]
+    command: ["--config=/etc/otelcol/config.yml"]
     ports:
       - "1888:1888"   # pprof extension
       - "8888:8888"   # Prometheus metrics
       - "8889:8889"   # Prometheus exporter metrics
       - "13133:13133" # health_check extension
-      - "4317:4317"   # OTLP gRPC receiver
+      - "4317:4317"   # OTLP gRPC receiver (main entry point)
       - "4318:4318"   # OTLP HTTP receiver
       - "55679:55679" # zpages extension
     volumes:
-      - ./config/otel-collector-config.yml:/etc/otel-collector-config.yml
+      - ./config/otel-collector-config.yml:/etc/otelcol/config.yml:ro
     depends_on:
       - jaeger
       - prometheus
