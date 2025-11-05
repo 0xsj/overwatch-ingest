@@ -1,4 +1,4 @@
-.PHONY: help install run-gateway run-agents run-incidents run-tools run-analytics run-all clean test
+.PHONY: help install run-gateway run-gateway-worker run-agents run-agents-worker run-incidents run-incidents-worker run-tools run-analytics run-all clean test
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -18,31 +18,46 @@ install: ## Install all dependencies
 	@cd services/tools && poetry install
 	@cd services/analytics && poetry install
 
-run-gateway: ## Run the gateway service
-	@echo "Starting gateway..."
-	@cd gateway && go run cmd/gateway/main.go
+run-gateway: ## Run the gateway server
+	@echo "Starting gateway server..."
+	@cd gateway && go run cmd/server/main.go
 
-run-agents: ## Run the agents service
-	@echo "Starting agents..."
-	@cd services/agents && go run cmd/agents/main.go
+run-gateway-worker: ## Run the gateway worker
+	@echo "Starting gateway worker..."
+	@cd gateway && go run cmd/worker/main.go
 
-run-incidents: ## Run the incidents service
-	@echo "Starting incidents..."
-	@cd services/incidents && go run cmd/incidents/main.go
+run-agents: ## Run the agents server
+	@echo "Starting agents server..."
+	@cd services/agents && go run cmd/server/main.go
+
+run-agents-worker: ## Run the agents worker
+	@echo "Starting agents worker..."
+	@cd services/agents && go run cmd/worker/main.go
+
+run-incidents: ## Run the incidents server
+	@echo "Starting incidents server..."
+	@cd services/incidents && go run cmd/server/main.go
+
+run-incidents-worker: ## Run the incidents worker
+	@echo "Starting incidents worker..."
+	@cd services/incidents && go run cmd/worker/main.go
 
 run-tools: ## Run the tools service
-	@echo "Starting tools..."
+	@echo "Starting tools service..."
 	@cd services/tools && poetry run python -m app.main
 
 run-analytics: ## Run the analytics service
-	@echo "Starting analytics..."
+	@echo "Starting analytics service..."
 	@cd services/analytics && poetry run python -m app.main
 
 run-all: ## Run all services (requires tmux or separate terminals)
 	@echo "Run each service in a separate terminal:"
 	@echo "  make run-gateway"
+	@echo "  make run-gateway-worker"
 	@echo "  make run-agents"
+	@echo "  make run-agents-worker"
 	@echo "  make run-incidents"
+	@echo "  make run-incidents-worker"
 	@echo "  make run-tools"
 	@echo "  make run-analytics"
 
