@@ -7,7 +7,7 @@ from .types import ErrorType
 from .codes import Code
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, eq=True)
 class Error:
     """
     Core error value with rich metadata.

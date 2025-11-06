@@ -464,25 +464,16 @@ class TestResultIntegration:
     
     def test_chaining_multiple_operations(self):
         """Test chaining multiple Result operations."""
-        result = Ok(5)
+        initial = Ok(5)
         
-        final = (
-            result
-            .pipe(lambda r: map_value(r, lambda x: x * 2))  # 10
-            .pipe(lambda r: and_then(r, lambda x: Ok(x + 3) if x > 0 else Err(
-                Error(ErrorType.VALIDATION, code("NEG"), "negative")
-            )))  # 13
-            .pipe(lambda r: map_value(r, lambda x: x - 1))  # 12
-        )
-        
-        # Note: Python doesn't have .pipe, so we'll do it manually
-        result = map_value(result, lambda x: x * 2)
+        # Manual chaining (Python doesn't have .pipe())
+        result = map_value(initial, lambda x: x * 2)  # 10
         result = and_then(result, lambda x: Ok(x + 3) if x > 0 else Err(
             Error(ErrorType.VALIDATION, code("NEG"), "negative")
-        ))
-        result = map_value(result, lambda x: x - 1)
+        ))  # 13
+        final = map_value(result, lambda x: x - 1)  # 12
         
-        assert unwrap(result) == 12
+        assert unwrap(final) == 12
     
     def test_error_propagation(self):
         """Test that errors propagate through chains."""

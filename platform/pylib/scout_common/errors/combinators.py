@@ -1,6 +1,10 @@
+# platform/pylib/scout_common/errors/combinators.py
 """Combinators and chainable operations for Result types."""
 
-from typing import TypeVar, Callable, ParamSpec, Concatenate
+from __future__ import annotations
+
+import functools  # ADD THIS LINE
+from typing import TypeVar, Callable, ParamSpec, Awaitable, Concatenate
 
 from .result import (
     Result,
@@ -199,100 +203,29 @@ def _wrap_result(result: Result[T, E]) -> OkResult[T] | ErrResult[E]:
 
 # Convenience functions to start chains
 def ok(value: T) -> OkResult[T]:
-    """
-    Create an OkResult for method chaining.
-    
-    Args:
-        value: The success value
-        
-    Returns:
-        OkResult wrapping the value
-        
-    Example:
-        >>> result = (
-        ...     ok(5)
-        ...     .map(lambda x: x * 2)
-        ...     .and_then(validate)
-        ...     .unwrap()
-        ... )
-    """
+    """Create an OkResult for method chaining."""
     return OkResult(value)
 
 
 def err(error: E) -> ErrResult[E]:
-    """
-    Create an ErrResult for method chaining.
-    
-    Args:
-        error: The error value
-        
-    Returns:
-        ErrResult wrapping the error
-        
-    Example:
-        >>> from scout_common.errors import validation
-        >>> result = (
-        ...     err(validation("invalid"))
-        ...     .or_else(lambda e: Ok(default_value))
-        ...     .unwrap()
-        ... )
-    """
+    """Create an ErrResult for method chaining."""
     return ErrResult(error)
 
 
 def wrap(result: Result[T, E]) -> OkResult[T] | ErrResult[E]:
-    """
-    Wrap a Result for method chaining.
-    
-    Args:
-        result: The Result to wrap
-        
-    Returns:
-        Wrapped result with chainable methods
-        
-    Example:
-        >>> result = get_user(user_id)
-        >>> processed = (
-        ...     wrap(result)
-        ...     .map(lambda u: u.email)
-        ...     .inspect(lambda email: print(f"Email: {email}"))
-        ...     .unwrap_or("no-email@example.com")
-        ... )
-    """
+    """Wrap a Result for method chaining."""
     return _wrap_result(result)
 
 
 # Pipeline operator alternative (Python doesn't have |>)
 class Pipeline:
-    """
-    Pipeline builder for composing operations.
-    
-    Allows building a pipeline of operations that can be applied to Results.
-    
-    Example:
-        >>> process_user = (
-        ...     Pipeline()
-        ...     .then(validate_user)
-        ...     .then(save_user)
-        ...     .then(send_notification)
-        ... )
-        >>> 
-        >>> result = process_user.run(Ok(user))
-    """
+    """Pipeline builder for composing operations."""
     
     def __init__(self):
         self._operations: list[Callable[[Result], Result]] = []
     
     def then(self, operation: Callable[[T], Result[U, E]]) -> "Pipeline":
-        """
-        Add an operation to the pipeline.
-        
-        Args:
-            operation: Function to apply in the pipeline
-            
-        Returns:
-            Self for chaining
-        """
+        """Add an operation to the pipeline."""
         def wrapped(result: Result[T, E]) -> Result[U, E]:
             return and_then(result, operation)
         
@@ -300,15 +233,7 @@ class Pipeline:
         return self
     
     def map(self, func: Callable[[T], U]) -> "Pipeline":
-        """
-        Add a mapping operation to the pipeline.
-        
-        Args:
-            func: Function to map over the value
-            
-        Returns:
-            Self for chaining
-        """
+        """Add a mapping operation to the pipeline."""
         def wrapped(result: Result[T, E]) -> Result[U, E]:
             return map_value(result, func)
         
@@ -316,15 +241,7 @@ class Pipeline:
         return self
     
     def recover(self, handler: Callable[[E], Result[T, U]]) -> "Pipeline":
-        """
-        Add error recovery to the pipeline.
-        
-        Args:
-            handler: Function to handle errors
-            
-        Returns:
-            Self for chaining
-        """
+        """Add error recovery to the pipeline."""
         def wrapped(result: Result[T, E]) -> Result[T, U]:
             return or_else(result, handler)
         
@@ -332,15 +249,7 @@ class Pipeline:
         return self
     
     def run(self, initial: Result[T, E]) -> Result:
-        """
-        Run the pipeline on an initial Result.
-        
-        Args:
-            initial: Starting Result
-            
-        Returns:
-            Final Result after all operations
-        """
+        """Run the pipeline on an initial Result."""
         result = initial
         for operation in self._operations:
             result = operation(result)
@@ -351,25 +260,7 @@ class Pipeline:
 def compose(
     *funcs: Callable[[Result[T, E]], Result[U, E]]
 ) -> Callable[[Result[T, E]], Result[U, E]]:
-    """
-    Compose multiple Result-returning functions.
-    
-    Creates a new function that applies each function in sequence.
-    
-    Args:
-        *funcs: Functions to compose (applied left to right)
-        
-    Returns:
-        Composed function
-        
-    Example:
-        >>> process = compose(
-        ...     lambda r: and_then(r, validate),
-        ...     lambda r: and_then(r, save),
-        ...     lambda r: map_value(r, to_dto)
-        ... )
-        >>> result = process(get_user(user_id))
-    """
+    """Compose multiple Result-returning functions."""
     def composed(initial: Result[T, E]) -> Result[U, E]:
         result = initial
         for func in funcs:
@@ -381,27 +272,10 @@ def compose(
 
 # Utility for trying operations that might raise
 def safe(func: Callable[P, T]) -> Callable[P, Result[T, Error]]:
-    """
-    Decorator to convert exception-raising functions to Result-returning.
-    
-    Wraps a function so that any exceptions are caught and converted to Err.
-    
-    Args:
-        func: Function that might raise exceptions
-        
-    Returns:
-        Function that returns Result instead of raising
-        
-    Example:
-        >>> @safe
-        ... def parse_int(s: str) -> int:
-        ...     return int(s)
-        >>> 
-        >>> result = parse_int("42")  # Ok(42)
-        >>> result = parse_int("abc")  # Err(...)
-    """
+    """Decorator to convert exception-raising functions to Result-returning."""
     from .constructors import internal
     
+    @functools.wraps(func)  # ADD THIS
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> Result[T, Error]:
         try:
             value = func(*args, **kwargs)
@@ -412,30 +286,14 @@ def safe(func: Callable[P, T]) -> Callable[P, Result[T, Error]]:
     return wrapper
 
 
-# Async support
-async def safe_async(
-    func: Callable[P, T]
-) -> Callable[P, Result[T, Error]]:
-    """
-    Async version of safe decorator.
-    
-    Wraps an async function to return Result instead of raising.
-    
-    Args:
-        func: Async function that might raise exceptions
-        
-    Returns:
-        Async function that returns Result
-        
-    Example:
-        >>> @safe_async
-        ... async def fetch_user(user_id: str) -> User:
-        ...     return await db.get_user(user_id)
-        >>> 
-        >>> result = await fetch_user("123")
-    """
+# Async support - FIX: Remove 'async' from function signature
+def safe_async(
+    func: Callable[P, Awaitable[T]]
+) -> Callable[P, Awaitable[Result[T, Error]]]:
+    """Async version of safe decorator."""
     from .constructors import internal
     
+    @functools.wraps(func)  # ADD THIS
     async def wrapper(*args: P.args, **kwargs: P.kwargs) -> Result[T, Error]:
         try:
             value = await func(*args, **kwargs)
