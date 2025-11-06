@@ -10,13 +10,13 @@ type ErrorType string
 const (
 	// Client Errors (4xx equivalent) - caused by invalid client input or state
 	// These errors typically should not be retried without changing the request.
-	ErrorTypeValidation    ErrorType = "VALIDATION"      // Invalid input data
-	ErrorTypeNotFound      ErrorType = "NOT_FOUND"       // Resource does not exist
-	ErrorTypeAlreadyExists ErrorType = "ALREADY_EXISTS"  // Resource already exists (conflict)
-	ErrorTypeUnauthorized  ErrorType = "UNAUTHORIZED"    // Missing or invalid authentication
-	ErrorTypeForbidden     ErrorType = "FORBIDDEN"       // Insufficient permissions
-	ErrorTypeConflict      ErrorType = "CONFLICT"        // State conflict (e.g., optimistic locking)
-	ErrorTypeRateLimit     ErrorType = "RATE_LIMIT"      // Rate limit exceeded
+	ErrorTypeValidation    ErrorType = "VALIDATION"     // Invalid input data
+	ErrorTypeNotFound      ErrorType = "NOT_FOUND"      // Resource does not exist
+	ErrorTypeAlreadyExists ErrorType = "ALREADY_EXISTS" // Resource already exists (conflict)
+	ErrorTypeUnauthorized  ErrorType = "UNAUTHORIZED"   // Missing or invalid authentication
+	ErrorTypeForbidden     ErrorType = "FORBIDDEN"      // Insufficient permissions
+	ErrorTypeConflict      ErrorType = "CONFLICT"       // State conflict (e.g., optimistic locking)
+	ErrorTypeRateLimit     ErrorType = "RATE_LIMIT"     // Rate limit exceeded
 
 	// Server Errors (5xx equivalent) - caused by server-side issues
 	// These errors may be retryable depending on the specific type.
