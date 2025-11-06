@@ -77,8 +77,14 @@ func (e *Error) Unwrap() error {
 // Is checks if this error matches the target error.
 // Matches if Type and Code are the same.
 func (e *Error) Is(target error) bool {
+	// Both nil should match
+	if e == nil && target == nil {
+		return true
+	}
+
+	// One nil, one not nil - no match
 	if e == nil || target == nil {
-		return e == target
+		return false
 	}
 
 	t, ok := target.(*Error)
