@@ -1,4 +1,4 @@
-// gateway/config/config.go
+// services/agents/config/config.go
 package config
 
 import (
@@ -7,9 +7,7 @@ import (
 	pkgconfig "github.com/0xsj/scout/platform/pkg/config"
 )
 
-// Config defines the complete configuration for the Gateway service.
-// It follows the interface-first design principle where the domain
-// defines what configuration it needs.
+// Config defines the complete configuration for the Agents service.
 type Config interface {
 	// Application settings
 	Port() int
@@ -20,11 +18,9 @@ type Config interface {
 	Postgres() PostgresConfig
 	Redis() RedisConfig
 	NATS() NATSConfig
-	RabbitMQ() RabbitMQConfig
 	Observability() ObservabilityConfig
 }
 
-// PostgresConfig defines PostgreSQL database configuration.
 type PostgresConfig interface {
 	Host() string
 	Port() int
@@ -36,7 +32,6 @@ type PostgresConfig interface {
 	ConnectionTimeout() time.Duration
 }
 
-// RedisConfig defines Redis cache configuration.
 type RedisConfig interface {
 	Host() string
 	Port() int
@@ -44,29 +39,19 @@ type RedisConfig interface {
 	PoolSize() int
 }
 
-// NATSConfig defines NATS messaging configuration.
 type NATSConfig interface {
 	URL() string
 	MaxReconnects() int
 	ReconnectWait() time.Duration
 }
 
-// RabbitMQConfig defines RabbitMQ queue configuration.
-type RabbitMQConfig interface {
-	URL() string
-	MaxChannels() int
-	PrefetchCount() int
-}
-
-// ObservabilityConfig defines observability configuration.
 type ObservabilityConfig interface {
 	OTELEndpoint() string
-	JaegerEndpoint() string
 	EnableTracing() bool
 	EnableMetrics() bool
 }
 
-// envConfig is the concrete implementation that loads from environment variables.
+// Implementation structs
 type envConfig struct {
 	port          int
 	environment   string
@@ -74,7 +59,6 @@ type envConfig struct {
 	postgres      *envPostgresConfig
 	redis         *envRedisConfig
 	nats          *envNATSConfig
-	rabbitmq      *envRabbitMQConfig
 	observability *envObservabilityConfig
 }
 
@@ -84,10 +68,8 @@ func (c *envConfig) LogLevel() string                   { return c.logLevel }
 func (c *envConfig) Postgres() PostgresConfig           { return c.postgres }
 func (c *envConfig) Redis() RedisConfig                 { return c.redis }
 func (c *envConfig) NATS() NATSConfig                   { return c.nats }
-func (c *envConfig) RabbitMQ() RabbitMQConfig           { return c.rabbitmq }
 func (c *envConfig) Observability() ObservabilityConfig { return c.observability }
 
-// Postgres implementation
 type envPostgresConfig struct {
 	host               string
 	port               int
@@ -108,7 +90,6 @@ func (c *envPostgresConfig) MaxConnections() int              { return c.maxConn
 func (c *envPostgresConfig) MaxIdleConnections() int          { return c.maxIdleConnections }
 func (c *envPostgresConfig) ConnectionTimeout() time.Duration { return c.connectionTimeout }
 
-// Redis implementation
 type envRedisConfig struct {
 	host       string
 	port       int
@@ -121,7 +102,6 @@ func (c *envRedisConfig) Port() int       { return c.port }
 func (c *envRedisConfig) MaxRetries() int { return c.maxRetries }
 func (c *envRedisConfig) PoolSize() int   { return c.poolSize }
 
-// NATS implementation
 type envNATSConfig struct {
 	url           string
 	maxReconnects int
@@ -132,44 +112,29 @@ func (c *envNATSConfig) URL() string                  { return c.url }
 func (c *envNATSConfig) MaxReconnects() int           { return c.maxReconnects }
 func (c *envNATSConfig) ReconnectWait() time.Duration { return c.reconnectWait }
 
-// RabbitMQ implementation
-type envRabbitMQConfig struct {
-	url           string
-	maxChannels   int
-	prefetchCount int
-}
-
-func (c *envRabbitMQConfig) URL() string        { return c.url }
-func (c *envRabbitMQConfig) MaxChannels() int   { return c.maxChannels }
-func (c *envRabbitMQConfig) PrefetchCount() int { return c.prefetchCount }
-
-// Observability implementation
 type envObservabilityConfig struct {
-	otelEndpoint   string
-	jaegerEndpoint string
-	enableTracing  bool
-	enableMetrics  bool
+	otelEndpoint  string
+	enableTracing bool
+	enableMetrics bool
 }
 
-func (c *envObservabilityConfig) OTELEndpoint() string   { return c.otelEndpoint }
-func (c *envObservabilityConfig) JaegerEndpoint() string { return c.jaegerEndpoint }
-func (c *envObservabilityConfig) EnableTracing() bool    { return c.enableTracing }
-func (c *envObservabilityConfig) EnableMetrics() bool    { return c.enableMetrics }
+func (c *envObservabilityConfig) OTELEndpoint() string { return c.otelEndpoint }
+func (c *envObservabilityConfig) EnableTracing() bool  { return c.enableTracing }
+func (c *envObservabilityConfig) EnableMetrics() bool  { return c.enableMetrics }
 
-// Load loads the Gateway configuration from environment variables with GATEWAY_ prefix.
+// Load loads the Agents configuration from environment variables.
 func Load(usePrefix bool) (Config, error) {
 	prefix := ""
 	if usePrefix {
-		prefix = "GATEWAY_"
+		prefix = "AGENTS_"
 	}
 
-	// Helper to optionally add prefix
 	key := func(name string) string {
 		return prefix + name
 	}
 
 	// Application config
-	port, err := pkgconfig.LoadPortOptional(key("PORT"), 8080)
+	port, err := pkgconfig.LoadPortOptional(key("PORT"), 8081)
 	if err != nil {
 		return nil, err
 	}
@@ -203,26 +168,17 @@ func Load(usePrefix bool) (Config, error) {
 		return nil, err
 	}
 
-	postgresMaxConns, err := pkgconfig.LoadIntOptional(
-		key("POSTGRES_MAX_CONNECTIONS"),
-		25,
-	)
+	postgresMaxConns, err := pkgconfig.LoadIntOptional(key("POSTGRES_MAX_CONNECTIONS"), 25)
 	if err != nil {
 		return nil, err
 	}
 
-	postgresMaxIdleConns, err := pkgconfig.LoadIntOptional(
-		key("POSTGRES_MAX_IDLE_CONNECTIONS"),
-		5,
-	)
+	postgresMaxIdleConns, err := pkgconfig.LoadIntOptional(key("POSTGRES_MAX_IDLE_CONNECTIONS"), 5)
 	if err != nil {
 		return nil, err
 	}
 
-	postgresConnTimeout, err := pkgconfig.LoadDurationOptional(
-		key("POSTGRES_CONNECTION_TIMEOUT"),
-		10*time.Second,
-	)
+	postgresConnTimeout, err := pkgconfig.LoadDurationOptional(key("POSTGRES_CONNECTION_TIMEOUT"), 10*time.Second)
 	if err != nil {
 		return nil, err
 	}
@@ -238,18 +194,12 @@ func Load(usePrefix bool) (Config, error) {
 		return nil, err
 	}
 
-	redisMaxRetries, err := pkgconfig.LoadIntOptional(
-		key("REDIS_MAX_RETRIES"),
-		3,
-	)
+	redisMaxRetries, err := pkgconfig.LoadIntOptional(key("REDIS_MAX_RETRIES"), 3)
 	if err != nil {
 		return nil, err
 	}
 
-	redisPoolSize, err := pkgconfig.LoadIntOptional(
-		key("REDIS_POOL_SIZE"),
-		10,
-	)
+	redisPoolSize, err := pkgconfig.LoadIntOptional(key("REDIS_POOL_SIZE"), 10)
 	if err != nil {
 		return nil, err
 	}
@@ -260,67 +210,25 @@ func Load(usePrefix bool) (Config, error) {
 		return nil, err
 	}
 
-	natsMaxReconnects, err := pkgconfig.LoadIntOptional(
-		key("NATS_MAX_RECONNECTS"),
-		10,
-	)
+	natsMaxReconnects, err := pkgconfig.LoadIntOptional(key("NATS_MAX_RECONNECTS"), 10)
 	if err != nil {
 		return nil, err
 	}
 
-	natsReconnectWait, err := pkgconfig.LoadDurationOptional(
-		key("NATS_RECONNECT_WAIT"),
-		2*time.Second,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// RabbitMQ config
-	rabbitmqURL, err := pkgconfig.LoadStringRequired(key("RABBITMQ_URL"))
-	if err != nil {
-		return nil, err
-	}
-
-	rabbitmqMaxChannels, err := pkgconfig.LoadIntOptional(
-		key("RABBITMQ_MAX_CHANNELS"),
-		100,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	rabbitmqPrefetch, err := pkgconfig.LoadIntOptional(
-		key("RABBITMQ_PREFETCH_COUNT"),
-		10,
-	)
+	natsReconnectWait, err := pkgconfig.LoadDurationOptional(key("NATS_RECONNECT_WAIT"), 2*time.Second)
 	if err != nil {
 		return nil, err
 	}
 
 	// Observability config
-	otelEndpoint := pkgconfig.LoadStringOptional(
-		key("OTEL_EXPORTER_OTLP_ENDPOINT"),
-		"http://localhost:4317",
-	)
+	otelEndpoint := pkgconfig.LoadStringOptional(key("OTEL_EXPORTER_OTLP_ENDPOINT"), "http://localhost:4317")
 
-	jaegerEndpoint := pkgconfig.LoadStringOptional(
-		key("JAEGER_ENDPOINT"),
-		"http://localhost:14268/api/traces",
-	)
-
-	enableTracing, err := pkgconfig.LoadBoolOptional(
-		key("ENABLE_TRACING"),
-		true,
-	)
+	enableTracing, err := pkgconfig.LoadBoolOptional(key("ENABLE_TRACING"), true)
 	if err != nil {
 		return nil, err
 	}
 
-	enableMetrics, err := pkgconfig.LoadBoolOptional(
-		key("ENABLE_METRICS"),
-		true,
-	)
+	enableMetrics, err := pkgconfig.LoadBoolOptional(key("ENABLE_METRICS"), true)
 	if err != nil {
 		return nil, err
 	}
@@ -350,16 +258,10 @@ func Load(usePrefix bool) (Config, error) {
 			maxReconnects: natsMaxReconnects,
 			reconnectWait: natsReconnectWait,
 		},
-		rabbitmq: &envRabbitMQConfig{
-			url:           rabbitmqURL,
-			maxChannels:   rabbitmqMaxChannels,
-			prefetchCount: rabbitmqPrefetch,
-		},
 		observability: &envObservabilityConfig{
-			otelEndpoint:   otelEndpoint,
-			jaegerEndpoint: jaegerEndpoint,
-			enableTracing:  enableTracing,
-			enableMetrics:  enableMetrics,
+			otelEndpoint:  otelEndpoint,
+			enableTracing: enableTracing,
+			enableMetrics: enableMetrics,
 		},
 	}, nil
 }
