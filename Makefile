@@ -18,38 +18,37 @@ install: ## Install all dependencies
 	@cd services/tools && poetry install
 	@cd services/analytics && poetry install
 
-# Local Development (without Docker)
 run-gateway: ## Run the gateway server
 	@echo "Starting gateway server..."
-	@cd gateway && go run cmd/server/main.go
+	@export $$(cat .env | xargs) && cd gateway && go run cmd/server/main.go
 
 run-gateway-worker: ## Run the gateway worker
 	@echo "Starting gateway worker..."
-	@cd gateway && go run cmd/worker/main.go
+	@export $$(cat .env | xargs) && cd gateway && go run cmd/worker/main.go
 
 run-agents: ## Run the agents server
 	@echo "Starting agents server..."
-	@cd services/agents && go run cmd/server/main.go
+	@export $$(cat .env | xargs) && cd services/agents && go run cmd/server/main.go
 
 run-agents-worker: ## Run the agents worker
 	@echo "Starting agents worker..."
-	@cd services/agents && go run cmd/worker/main.go
+	@export $$(cat .env | xargs) && cd services/agents && go run cmd/worker/main.go
 
 run-incidents: ## Run the incidents server
 	@echo "Starting incidents server..."
-	@cd services/incidents && go run cmd/server/main.go
+	@export $$(cat .env | xargs) && cd services/incidents && go run cmd/server/main.go
 
 run-incidents-worker: ## Run the incidents worker
 	@echo "Starting incidents worker..."
-	@cd services/incidents && go run cmd/worker/main.go
+	@export $$(cat .env | xargs) && cd services/incidents && go run cmd/worker/main.go
 
 run-tools: ## Run the tools service
 	@echo "Starting tools service..."
-	@cd services/tools && poetry run python -m app.main
+	@export $$(cat .env | xargs) && cd services/tools && poetry run python -m app.main
 
 run-analytics: ## Run the analytics service
 	@echo "Starting analytics service..."
-	@cd services/analytics && poetry run python -m app.main
+	@export $$(cat .env | xargs) && cd services/analytics && poetry run python -m app.main
 
 run-all: ## Run all services (requires tmux or separate terminals)
 	@echo "Run each service in a separate terminal:"
