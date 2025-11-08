@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package agents.v1;
+
+option go_package = "github.com/0xsj/scout/api/proto/agents/v1;agentsv1";
+
+// AgentsService provides agent management operations
+service AgentsService {
+  // Health checks if the service is healthy
+  rpc Health(HealthRequest) returns (HealthResponse);
+  
+  // GetAgentStatus returns the status of an agent
+  rpc GetAgentStatus(GetAgentStatusRequest) returns (GetAgentStatusResponse);
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  string service = 2;
+  string version = 3;
+}
+
+message GetAgentStatusRequest {
+  string agent_id = 1;
+}
+
+message GetAgentStatusResponse {
+  string agent_id = 1;
+  string status = 2;  // "active", "inactive", "deployed"
+  int64 last_seen = 3;
+}
