@@ -193,3 +193,15 @@ k8s-shell: ## Get shell in a pod (usage: make k8s-shell SERVICE=gateway)
 
 k8s-port-forward: ## Port forward to a service (usage: make k8s-port-forward SERVICE=gateway PORT=8080)
 	@kubectl port-forward -n scout service/$(SERVICE) $(PORT):$(PORT)
+
+proto-gen: ## Generate Go and Python code from domain-local proto files
+	@./scripts/generate-proto.sh
+
+proto-clean: ## Clean generated proto files
+	@echo "Cleaning generated proto files..."
+	@find services/*/api/v1 -name "*.pb.go" -delete 2>/dev/null || true
+	@find services/*/api/v1 -name "*_grpc.pb.go" -delete 2>/dev/null || true
+	@find services/*/api/v1 -name "*_pb2.py" -delete 2>/dev/null || true
+	@find services/*/api/v1 -name "*_pb2_grpc.py" -delete 2>/dev/null || true
+	@find services/*/api/v1 -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+	@echo "✓ Clean complete"
