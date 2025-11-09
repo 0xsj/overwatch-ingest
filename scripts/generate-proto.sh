@@ -1,6 +1,9 @@
 #!/bin/bash
 
 # Script to generate Go and Python code from domain-local protobuf definitions
+# Generates:
+#   - Server code in each service's api/v1/ directory
+#   - Client code (all Go) in gateway/api/ directory
 # Usage: ./scripts/generate-proto.sh
 
 set -e  # Exit on error
@@ -14,8 +17,9 @@ NC='\033[0m' # No Color
 # Directories
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+GATEWAY_API_DIR="$ROOT_DIR/gateway/api"
 
-echo -e "${GREEN}=== Scout Proto Generation (Domain-Local) ===${NC}"
+echo -e "${GREEN}=== Scout Proto Generation (Domain-Local + Gateway Clients) ===${NC}"
 echo ""
 
 # Check if protoc is installed
@@ -62,10 +66,10 @@ for service in "${SERVICES[@]}"; do
     
     echo -e "${YELLOW}Processing $service service...${NC}"
     
-    # Determine if this is a Go or Python service
+    # 1. Generate server code in service directory
     if [ -f "$SERVICE_DIR/go.mod" ]; then
-        # Go service
-        echo "  Generating Go code for $service..."
+        # Go service - generate Go server code
+        echo "  Generating Go server code for $service..."
         
         protoc \
             --proto_path="$PROTO_DIR" \
@@ -75,15 +79,14 @@ for service in "${SERVICES[@]}"; do
             --go-grpc_opt=paths=source_relative \
             "$PROTO_FILE"
         
-        echo -e "  ${GREEN}✓ Go code generated${NC}"
+        echo -e "  ${GREEN}✓ Go server code generated${NC}"
         
     elif [ -f "$SERVICE_DIR/pyproject.toml" ]; then
-        # Python service
-        echo "  Generating Python code for $service..."
+        # Python service - generate Python server code
+        echo "  Generating Python server code for $service..."
         
         cd "$SERVICE_DIR"
         
-        # Use poetry run to ensure we're in the right environment
         poetry run python -m grpc_tools.protoc \
             --proto_path="api/v1" \
             --python_out="api/v1" \
@@ -94,10 +97,8 @@ for service in "${SERVICES[@]}"; do
         GRPC_FILE="$PROTO_DIR/${service}_pb2_grpc.py"
         if [ -f "$GRPC_FILE" ]; then
             if [[ "$OSTYPE" == "darwin"* ]]; then
-                # macOS
                 sed -i '' "s/import ${service}_pb2/from . import ${service}_pb2/" "$GRPC_FILE"
             else
-                # Linux
                 sed -i "s/import ${service}_pb2/from . import ${service}_pb2/" "$GRPC_FILE"
             fi
         fi
@@ -109,13 +110,26 @@ for service in "${SERVICES[@]}"; do
 EOF
         fi
         
-        echo -e "  ${GREEN}✓ Python code generated${NC}"
+        echo -e "  ${GREEN}✓ Python server code generated${NC}"
         
         cd "$ROOT_DIR"
-    else
-        echo -e "  ${YELLOW}Unknown service type (no go.mod or pyproject.toml)${NC}"
     fi
     
+    # 2. Generate Go client code in gateway/api/ for ALL services
+    echo "  Generating Go client code in gateway/api/${service}/v1/..."
+    
+    GATEWAY_SERVICE_DIR="$GATEWAY_API_DIR/$service/v1"
+    mkdir -p "$GATEWAY_SERVICE_DIR"
+    
+    protoc \
+        --proto_path="$PROTO_DIR" \
+        --go_out="$GATEWAY_SERVICE_DIR" \
+        --go_opt=paths=source_relative \
+        --go-grpc_out="$GATEWAY_SERVICE_DIR" \
+        --go-grpc_opt=paths=source_relative \
+        "$PROTO_FILE"
+    
+    echo -e "  ${GREEN}✓ Go client code generated in gateway${NC}"
     echo ""
 done
 
@@ -123,12 +137,17 @@ done
 echo -e "${GREEN}=== Generation Complete ===${NC}"
 echo ""
 echo "Generated files:"
-echo "  Go services:"
+echo ""
+echo "  Service Implementations (Server):"
 echo "    services/agents/api/v1/{agents.pb.go,agents_grpc.pb.go}"
 echo "    services/incidents/api/v1/{incidents.pb.go,incidents_grpc.pb.go}"
-echo ""
-echo "  Python services:"
 echo "    services/tools/api/v1/{tools_pb2.py,tools_pb2_grpc.py}"
 echo "    services/analytics/api/v1/{analytics_pb2.py,analytics_pb2_grpc.py}"
+echo ""
+echo "  Gateway Clients (All Go):"
+echo "    gateway/api/agents/v1/{agents.pb.go,agents_grpc.pb.go}"
+echo "    gateway/api/incidents/v1/{incidents.pb.go,incidents_grpc.pb.go}"
+echo "    gateway/api/tools/v1/{tools.pb.go,tools_grpc.pb.go}"
+echo "    gateway/api/analytics/v1/{analytics.pb.go,analytics_grpc.pb.go}"
 echo ""
 echo -e "${GREEN}✓ All done!${NC}"

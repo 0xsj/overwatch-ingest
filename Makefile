@@ -205,3 +205,13 @@ proto-clean: ## Clean generated proto files
 	@find services/*/api/v1 -name "*_pb2_grpc.py" -delete 2>/dev/null || true
 	@find services/*/api/v1 -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
 	@echo "✓ Clean complete"
+	
+proto-clean: ## Clean generated proto files
+	@echo "Cleaning generated proto files..."
+	@find services/*/api/v1 -name "*.pb.go" -delete 2>/dev/null || true
+	@find services/*/api/v1 -name "*_grpc.pb.go" -delete 2>/dev/null || true
+	@find services/*/api/v1 -name "*_pb2.py" -delete 2>/dev/null || true
+	@find services/*/api/v1 -name "*_pb2_grpc.py" -delete 2>/dev/null || true
+	@find services/*/api/v1 -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+	@rm -rf gateway/api 2>/dev/null || true
+	@echo "✓ Clean complete"
