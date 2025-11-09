@@ -9,6 +9,7 @@ packages = [{include = "app"}]
 [tool.poetry.dependencies]
 python = "^3.12"
 scout-common = {path = "../../platform/pylib", develop = true}
+grpcio-tools = "^1.76.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
