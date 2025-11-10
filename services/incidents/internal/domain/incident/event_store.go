@@ -1,5 +1,5 @@
-// services/agents/internal/domain/agent/event_store.go
-package agent
+// services/incidents/internal/domain/incident/event_store.go
+package incident
 
 import (
 	"context"

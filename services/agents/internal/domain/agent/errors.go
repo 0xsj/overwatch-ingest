@@ -9,51 +9,59 @@ import (
 
 // Domain error codes
 const (
-	ErrCodeInvalidAgentName        errors.Code = "AGENT:INVALID_NAME"
-	ErrCodeInvalidAgentType        errors.Code = "AGENT:INVALID_TYPE"
-	ErrCodeAgentAlreadyCreated     errors.Code = "AGENT:ALREADY_CREATED"
-	ErrCodeAgentNotCreated         errors.Code = "AGENT:NOT_CREATED"
-	ErrCodeAgentDeactivated        errors.Code = "AGENT:DEACTIVATED"
-	ErrCodeInvalidLocation         errors.Code = "AGENT:INVALID_LOCATION"
-	ErrCodeInvalidStatusTransition errors.Code = "AGENT:INVALID_STATUS_TRANSITION"
+	ErrCodeInvalidAgentID       errors.Code = "AGENT:INVALID_ID"
+	ErrCodeInvalidProvider      errors.Code = "AGENT:INVALID_PROVIDER"
+	ErrCodeInvalidModel         errors.Code = "AGENT:INVALID_MODEL"
+	ErrCodeInvalidStatus        errors.Code = "AGENT:INVALID_STATUS"
+	ErrCodeAgentNotInitialized  errors.Code = "AGENT:NOT_INITIALIZED"
+	ErrCodeAgentAlreadyActive   errors.Code = "AGENT:ALREADY_ACTIVE"
+	ErrCodeAgentDeactivated     errors.Code = "AGENT:DEACTIVATED"
+	ErrCodeAgentBusy            errors.Code = "AGENT:BUSY"
+	ErrCodeNoTaskInProgress     errors.Code = "AGENT:NO_TASK_IN_PROGRESS"
+	ErrCodeInvalidTaskTransition errors.Code = "AGENT:INVALID_TASK_TRANSITION"
 )
 
-// Domain errors using platform constructors
+// Domain errors
 var (
-	// ErrInvalidAgentName is returned when agent name is invalid
-	ErrInvalidAgentName = errors.Validation("agent name is required and cannot be empty")
+	// ErrAgentNotInitialized is returned when trying to operate on a non-initialized agent
+	ErrAgentNotInitialized = errors.Validation("agent has not been initialized")
 
-	// ErrAgentAlreadyCreated is returned when trying to create an already created agent
-	ErrAgentAlreadyCreated = errors.Conflict("agent", "agent has already been created")
-
-	// ErrAgentNotCreated is returned when trying to operate on an agent that hasn't been created
-	ErrAgentNotCreated = errors.Validation("agent has not been created yet")
+	// ErrAgentAlreadyActive is returned when trying to activate an already active agent
+	ErrAgentAlreadyActive = errors.Conflict("agent", "agent is already active")
 
 	// ErrAgentDeactivated is returned when trying to operate on a deactivated agent
 	ErrAgentDeactivated = errors.Validation("agent has been deactivated")
+
+	// ErrAgentBusy is returned when trying to assign a task to a busy agent
+	ErrAgentBusy = errors.Conflict("agent", "agent is currently busy processing a task")
+
+	// ErrNoTaskInProgress is returned when trying to complete/fail a task with no task in progress
+	ErrNoTaskInProgress = errors.Validation("no task currently in progress")
 )
 
-// NewInvalidAgentTypeError creates an error for invalid agent type with the provided value.
-func NewInvalidAgentTypeError(agentType string) error {
-	return errors.InvalidField("agent_type", agentType)
-}
-
-// NewInvalidStatusTransitionError creates an error for invalid status transitions.
-func NewInvalidStatusTransitionError(from, to Status) error {
+// NewInvalidProviderError creates an error for invalid provider.
+func NewInvalidProviderError(provider string) error {
 	return errors.New(
 		errors.ErrorTypeValidation,
-		ErrCodeInvalidStatusTransition,
-		"invalid status transition",
-	).WithDetail("from_status", from.String()).
-		WithDetail("to_status", to.String())
+		ErrCodeInvalidProvider,
+		fmt.Sprintf("invalid provider: %s", provider),
+	).WithDetail("provider", provider)
 }
 
-// NewInvalidLocationError creates an error for invalid location with coordinates.
-func NewInvalidLocationError(lat, lon float64, reason string) error {
+// NewInvalidModelError creates an error for invalid model.
+func NewInvalidModelError(model string) error {
 	return errors.New(
 		errors.ErrorTypeValidation,
-		ErrCodeInvalidLocation,
-		reason,
-	).WithDetail("latitude", fmt.Sprintf("%f", lat)).
-		WithDetail("longitude", fmt.Sprintf("%f", lon))
+		ErrCodeInvalidModel,
+		fmt.Sprintf("invalid model: %s", model),
+	).WithDetail("model", model)
+}
+
+// NewInvalidStatusError creates an error for invalid status.
+func NewInvalidStatusError(status string) error {
+	return errors.New(
+		errors.ErrorTypeValidation,
+		ErrCodeInvalidStatus,
+		fmt.Sprintf("invalid status: %s", status),
+	).WithDetail("status", status)
 }

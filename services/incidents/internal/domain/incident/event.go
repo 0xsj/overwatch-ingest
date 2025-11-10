@@ -1,5 +1,5 @@
-// services/agents/internal/domain/agent/event.go
-package agent
+// services/incidents/internal/domain/incident/event.go
+package incident
 
 import (
 	"time"
@@ -11,7 +11,7 @@ type Event interface {
 	// AggregateID returns the ID of the aggregate this event belongs to
 	AggregateID() string
 
-	// EventType returns the type of event (e.g., "AgentInitialized")
+	// EventType returns the type of event (e.g., "IncidentReported")
 	EventType() string
 
 	// OccurredAt returns when the event occurred
