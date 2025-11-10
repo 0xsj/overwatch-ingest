@@ -10,6 +10,7 @@ import (
 type EventStore interface {
 	// Save persists uncommitted events for an aggregate.
 	// Events are saved atomically - either all succeed or all fail.
+	// expectedVersion is used for optimistic concurrency control.
 	// After successful save, events are typically published to the event bus.
 	Save(ctx context.Context, aggregateID string, events []Event, expectedVersion int64) error
 

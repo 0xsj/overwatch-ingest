@@ -1,4 +1,4 @@
-// services/agents/internal/domain/agent/events.go
+// services/agents/internal/domain/agent/domain_events.go
 package agent
 
 import (
@@ -7,86 +7,43 @@ import (
 
 // Event type constants
 const (
-	EventTypeAgentCreated         = "AgentCreated"
-	EventTypeAgentDeployed        = "AgentDeployed"
-	EventTypeAgentStatusChanged   = "AgentStatusChanged"
-	EventTypeAgentLocationUpdated = "AgentLocationUpdated"
-	EventTypeAgentDeactivated     = "AgentDeactivated"
+	EventTypeAgentInitialized = "AgentInitialized"
+	EventTypeAgentActivated   = "AgentActivated"
+	EventTypeAgentDeactivated = "AgentDeactivated"
+	EventTypeAgentTaskReceived = "AgentTaskReceived"
+	EventTypeAgentTaskCompleted = "AgentTaskCompleted"
+	EventTypeAgentTaskFailed   = "AgentTaskFailed"
 )
 
-// AgentCreated is emitted when a new agent is created.
-type AgentCreated struct {
+// AgentInitialized is emitted when a new agent is initialized.
+type AgentInitialized struct {
 	BaseEvent
-	Name      string `json:"name"`
-	AgentType string `json:"agent_type"`
-	CreatedBy string `json:"created_by,omitempty"`
+	Name     string `json:"name"`
+	Provider string `json:"provider"`
+	Model    string `json:"model"`
 }
 
-// NewAgentCreated creates a new AgentCreated event.
-func NewAgentCreated(aggregateID, name, agentType, createdBy string, sequence int64) *AgentCreated {
-	return &AgentCreated{
-		BaseEvent: NewBaseEvent(aggregateID, EventTypeAgentCreated, sequence),
+// NewAgentInitialized creates a new AgentInitialized event.
+func NewAgentInitialized(aggregateID, name, provider, model string, sequence int64) *AgentInitialized {
+	return &AgentInitialized{
+		BaseEvent: NewBaseEvent(aggregateID, EventTypeAgentInitialized, sequence),
 		Name:      name,
-		AgentType: agentType,
-		CreatedBy: createdBy,
+		Provider:  provider,
+		Model:     model,
 	}
 }
 
-// AgentDeployed is emitted when an agent is deployed to the field.
-type AgentDeployed struct {
+// AgentActivated is emitted when an agent is activated.
+type AgentActivated struct {
 	BaseEvent
-	Latitude   float64   `json:"latitude"`
-	Longitude  float64   `json:"longitude"`
-	DeployedAt time.Time `json:"deployed_at"`
-	DeployedBy string    `json:"deployed_by,omitempty"`
+	ActivatedAt time.Time `json:"activated_at"`
 }
 
-// NewAgentDeployed creates a new AgentDeployed event.
-func NewAgentDeployed(aggregateID string, lat, lon float64, deployedBy string, sequence int64) *AgentDeployed {
-	return &AgentDeployed{
-		BaseEvent:  NewBaseEvent(aggregateID, EventTypeAgentDeployed, sequence),
-		Latitude:   lat,
-		Longitude:  lon,
-		DeployedAt: time.Now(),
-		DeployedBy: deployedBy,
-	}
-}
-
-// AgentStatusChanged is emitted when an agent's status changes.
-type AgentStatusChanged struct {
-	BaseEvent
-	OldStatus string    `json:"old_status"`
-	NewStatus string    `json:"new_status"`
-	Reason    string    `json:"reason,omitempty"`
-	ChangedAt time.Time `json:"changed_at"`
-}
-
-// NewAgentStatusChanged creates a new AgentStatusChanged event.
-func NewAgentStatusChanged(aggregateID, oldStatus, newStatus, reason string, sequence int64) *AgentStatusChanged {
-	return &AgentStatusChanged{
-		BaseEvent: NewBaseEvent(aggregateID, EventTypeAgentStatusChanged, sequence),
-		OldStatus: oldStatus,
-		NewStatus: newStatus,
-		Reason:    reason,
-		ChangedAt: time.Now(),
-	}
-}
-
-// AgentLocationUpdated is emitted when an agent's location changes.
-type AgentLocationUpdated struct {
-	BaseEvent
-	Latitude  float64   `json:"latitude"`
-	Longitude float64   `json:"longitude"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-// NewAgentLocationUpdated creates a new AgentLocationUpdated event.
-func NewAgentLocationUpdated(aggregateID string, lat, lon float64, sequence int64) *AgentLocationUpdated {
-	return &AgentLocationUpdated{
-		BaseEvent: NewBaseEvent(aggregateID, EventTypeAgentLocationUpdated, sequence),
-		Latitude:  lat,
-		Longitude: lon,
-		UpdatedAt: time.Now(),
+// NewAgentActivated creates a new AgentActivated event.
+func NewAgentActivated(aggregateID string, sequence int64) *AgentActivated {
+	return &AgentActivated{
+		BaseEvent:   NewBaseEvent(aggregateID, EventTypeAgentActivated, sequence),
+		ActivatedAt: time.Now(),
 	}
 }
 
@@ -95,15 +52,67 @@ type AgentDeactivated struct {
 	BaseEvent
 	Reason        string    `json:"reason,omitempty"`
 	DeactivatedAt time.Time `json:"deactivated_at"`
-	DeactivatedBy string    `json:"deactivated_by,omitempty"`
 }
 
 // NewAgentDeactivated creates a new AgentDeactivated event.
-func NewAgentDeactivated(aggregateID, reason, deactivatedBy string, sequence int64) *AgentDeactivated {
+func NewAgentDeactivated(aggregateID, reason string, sequence int64) *AgentDeactivated {
 	return &AgentDeactivated{
 		BaseEvent:     NewBaseEvent(aggregateID, EventTypeAgentDeactivated, sequence),
 		Reason:        reason,
 		DeactivatedAt: time.Now(),
-		DeactivatedBy: deactivatedBy,
+	}
+}
+
+// AgentTaskReceived is emitted when an agent receives a task.
+type AgentTaskReceived struct {
+	BaseEvent
+	TaskID   string                 `json:"task_id"`
+	TaskType string                 `json:"task_type"`
+	Input    map[string]interface{} `json:"input,omitempty"`
+}
+
+// NewAgentTaskReceived creates a new AgentTaskReceived event.
+func NewAgentTaskReceived(aggregateID, taskID, taskType string, input map[string]interface{}, sequence int64) *AgentTaskReceived {
+	return &AgentTaskReceived{
+		BaseEvent: NewBaseEvent(aggregateID, EventTypeAgentTaskReceived, sequence),
+		TaskID:    taskID,
+		TaskType:  taskType,
+		Input:     input,
+	}
+}
+
+// AgentTaskCompleted is emitted when an agent completes a task.
+type AgentTaskCompleted struct {
+	BaseEvent
+	TaskID      string                 `json:"task_id"`
+	Output      map[string]interface{} `json:"output,omitempty"`
+	CompletedAt time.Time              `json:"completed_at"`
+}
+
+// NewAgentTaskCompleted creates a new AgentTaskCompleted event.
+func NewAgentTaskCompleted(aggregateID, taskID string, output map[string]interface{}, sequence int64) *AgentTaskCompleted {
+	return &AgentTaskCompleted{
+		BaseEvent:   NewBaseEvent(aggregateID, EventTypeAgentTaskCompleted, sequence),
+		TaskID:      taskID,
+		Output:      output,
+		CompletedAt: time.Now(),
+	}
+}
+
+// AgentTaskFailed is emitted when an agent task fails.
+type AgentTaskFailed struct {
+	BaseEvent
+	TaskID   string    `json:"task_id"`
+	Reason   string    `json:"reason"`
+	FailedAt time.Time `json:"failed_at"`
+}
+
+// NewAgentTaskFailed creates a new AgentTaskFailed event.
+func NewAgentTaskFailed(aggregateID, taskID, reason string, sequence int64) *AgentTaskFailed {
+	return &AgentTaskFailed{
+		BaseEvent: NewBaseEvent(aggregateID, EventTypeAgentTaskFailed, sequence),
+		TaskID:    taskID,
+		Reason:    reason,
+		FailedAt:  time.Now(),
 	}
 }

@@ -11,7 +11,7 @@ type Event interface {
 	// AggregateID returns the ID of the aggregate this event belongs to
 	AggregateID() string
 
-	// EventType returns the type of event (e.g., "AgentCreated")
+	// EventType returns the type of event (e.g., "AgentInitialized")
 	EventType() string
 
 	// OccurredAt returns when the event occurred

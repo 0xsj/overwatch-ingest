@@ -3,21 +3,28 @@ package agent
 
 import (
 	"time"
+
+	"github.com/0xsj/scout/platform/pkg/errors"
 )
 
 // Agent is the aggregate root for the Agent bounded context.
-// It represents an emergency response agent and encapsulates all business rules.
+// It represents an AI/ML-powered assistant that processes tasks using LLMs and tools.
 // State is rebuilt from events (Event Sourcing).
 type Agent struct {
 	// Identity
 	id AgentID
 
-	// State (rebuilt from events)
-	name          string
-	agentType     AgentType
-	status        Status
-	location      *Location
-	deployedAt    *time.Time
+	// Configuration
+	name     string
+	provider Provider
+	model    Model
+
+	// State
+	status        AgentStatus
+	currentTaskID *string // Task currently being processed (if busy)
+
+	// Metadata
+	activatedAt   *time.Time
 	deactivatedAt *time.Time
 
 	// Event Sourcing metadata
@@ -29,7 +36,7 @@ type Agent struct {
 func NewAgent(id AgentID) *Agent {
 	return &Agent{
 		id:                id,
-		status:            "", // Will be set when created
+		status:            "", // Will be set when initialized
 		version:           0,
 		uncommittedEvents: make([]Event, 0),
 	}
@@ -74,27 +81,33 @@ func (a *Agent) nextSequenceNumber() int64 {
 func (a *Agent) apply(event Event, recordEvent bool) {
 	// Apply state changes based on event type
 	switch e := event.(type) {
-	case *AgentCreated:
+	case *AgentInitialized:
 		a.name = e.Name
-		a.agentType = AgentType(e.AgentType)
-		a.status = StatusCreated
+		a.provider = Provider(e.Provider)
+		a.model = Model(e.Model)
+		a.status = StatusInitialized
 
-	case *AgentDeployed:
-		loc := Location{Latitude: e.Latitude, Longitude: e.Longitude}
-		a.location = &loc
-		a.deployedAt = &e.DeployedAt
-		a.status = StatusDeployed
-
-	case *AgentStatusChanged:
-		a.status = Status(e.NewStatus)
-
-	case *AgentLocationUpdated:
-		loc := Location{Latitude: e.Latitude, Longitude: e.Longitude}
-		a.location = &loc
+	case *AgentActivated:
+		a.status = StatusActive
+		a.activatedAt = &e.ActivatedAt
 
 	case *AgentDeactivated:
 		a.status = StatusDeactivated
 		a.deactivatedAt = &e.DeactivatedAt
+		a.currentTaskID = nil // Clear any task in progress
+
+	case *AgentTaskReceived:
+		a.status = StatusBusy
+		taskID := e.TaskID
+		a.currentTaskID = &taskID
+
+	case *AgentTaskCompleted:
+		a.status = StatusActive
+		a.currentTaskID = nil
+
+	case *AgentTaskFailed:
+		a.status = StatusActive
+		a.currentTaskID = nil
 	}
 
 	// Increment version
@@ -108,27 +121,31 @@ func (a *Agent) apply(event Event, recordEvent bool) {
 
 // === COMMANDS (Business Operations) ===
 
-// Create creates a new agent.
-func (a *Agent) Create(name string, agentType AgentType, createdBy string) error {
+// Initialize initializes a new agent with configuration.
+func (a *Agent) Initialize(name string, provider Provider, model Model) error {
 	// Business rules validation
 	if a.status != "" {
-		return ErrAgentAlreadyCreated
+		return errors.Conflict("agent", "agent has already been initialized")
 	}
 
 	if name == "" {
-		return ErrInvalidAgentName
+		return errors.RequiredField("name")
 	}
 
-	if !agentType.IsValid() {
-		return NewInvalidAgentTypeError(agentType.String())
+	if !provider.IsValid() {
+		return NewInvalidProviderError(provider.String())
+	}
+
+	if !model.IsValid() {
+		return NewInvalidModelError(model.String())
 	}
 
 	// Generate and apply event
-	event := NewAgentCreated(
+	event := NewAgentInitialized(
 		a.id.String(),
 		name,
-		agentType.String(),
-		createdBy,
+		provider.String(),
+		model.String(),
 		a.nextSequenceNumber(),
 	)
 
@@ -137,91 +154,24 @@ func (a *Agent) Create(name string, agentType AgentType, createdBy string) error
 	return nil
 }
 
-// Deploy deploys the agent to a specific location.
-func (a *Agent) Deploy(lat, lon float64, deployedBy string) error {
+// Activate activates the agent, making it ready to receive tasks.
+func (a *Agent) Activate() error {
 	// Business rules validation
 	if a.status == "" {
-		return ErrAgentNotCreated
+		return ErrAgentNotInitialized
+	}
+
+	if a.status == StatusActive {
+		return ErrAgentAlreadyActive
 	}
 
 	if a.status == StatusDeactivated {
 		return ErrAgentDeactivated
 	}
 
-	location, err := NewLocation(lat, lon)
-	if err != nil {
-		return err
-	}
-
 	// Generate and apply event
-	event := NewAgentDeployed(
+	event := NewAgentActivated(
 		a.id.String(),
-		location.Latitude,
-		location.Longitude,
-		deployedBy,
-		a.nextSequenceNumber(),
-	)
-
-	a.apply(event, true)
-
-	return nil
-}
-
-// ChangeStatus changes the agent's operational status.
-func (a *Agent) ChangeStatus(newStatus Status, reason string) error {
-	// Business rules validation
-	if a.status == "" {
-		return ErrAgentNotCreated
-	}
-
-	if a.status == StatusDeactivated {
-		return ErrAgentDeactivated
-	}
-
-	if !newStatus.IsValid() {
-		return NewInvalidAgentTypeError(newStatus.String())
-	}
-
-	// Check if transition is valid
-	if !a.status.CanTransitionTo(newStatus) {
-		return NewInvalidStatusTransitionError(a.status, newStatus)
-	}
-
-	// Generate and apply event
-	event := NewAgentStatusChanged(
-		a.id.String(),
-		a.status.String(),
-		newStatus.String(),
-		reason,
-		a.nextSequenceNumber(),
-	)
-
-	a.apply(event, true)
-
-	return nil
-}
-
-// UpdateLocation updates the agent's current location.
-func (a *Agent) UpdateLocation(lat, lon float64) error {
-	// Business rules validation
-	if a.status == "" {
-		return ErrAgentNotCreated
-	}
-
-	if a.status == StatusDeactivated {
-		return ErrAgentDeactivated
-	}
-
-	location, err := NewLocation(lat, lon)
-	if err != nil {
-		return err
-	}
-
-	// Generate and apply event
-	event := NewAgentLocationUpdated(
-		a.id.String(),
-		location.Latitude,
-		location.Longitude,
 		a.nextSequenceNumber(),
 	)
 
@@ -231,10 +181,10 @@ func (a *Agent) UpdateLocation(lat, lon float64) error {
 }
 
 // Deactivate deactivates the agent.
-func (a *Agent) Deactivate(reason, deactivatedBy string) error {
+func (a *Agent) Deactivate(reason string) error {
 	// Business rules validation
 	if a.status == "" {
-		return ErrAgentNotCreated
+		return ErrAgentNotInitialized
 	}
 
 	if a.status == StatusDeactivated {
@@ -245,7 +195,105 @@ func (a *Agent) Deactivate(reason, deactivatedBy string) error {
 	event := NewAgentDeactivated(
 		a.id.String(),
 		reason,
-		deactivatedBy,
+		a.nextSequenceNumber(),
+	)
+
+	a.apply(event, true)
+
+	return nil
+}
+
+// ReceiveTask assigns a task to the agent.
+func (a *Agent) ReceiveTask(taskID, taskType string, input map[string]interface{}) error {
+	// Business rules validation
+	if a.status == "" {
+		return ErrAgentNotInitialized
+	}
+
+	if a.status == StatusDeactivated {
+		return ErrAgentDeactivated
+	}
+
+	if a.status == StatusBusy {
+		return ErrAgentBusy
+	}
+
+	if taskID == "" {
+		return errors.RequiredField("task_id")
+	}
+
+	if taskType == "" {
+		return errors.RequiredField("task_type")
+	}
+
+	// Generate and apply event
+	event := NewAgentTaskReceived(
+		a.id.String(),
+		taskID,
+		taskType,
+		input,
+		a.nextSequenceNumber(),
+	)
+
+	a.apply(event, true)
+
+	return nil
+}
+
+// CompleteTask marks the current task as completed.
+func (a *Agent) CompleteTask(taskID string, output map[string]interface{}) error {
+	// Business rules validation
+	if a.currentTaskID == nil {
+		return ErrNoTaskInProgress
+	}
+
+	if *a.currentTaskID != taskID {
+		return errors.New(
+			errors.ErrorTypeValidation,
+			ErrCodeInvalidTaskTransition,
+			"task ID mismatch",
+		).WithDetail("expected_task_id", *a.currentTaskID).
+			WithDetail("provided_task_id", taskID)
+	}
+
+	// Generate and apply event
+	event := NewAgentTaskCompleted(
+		a.id.String(),
+		taskID,
+		output,
+		a.nextSequenceNumber(),
+	)
+
+	a.apply(event, true)
+
+	return nil
+}
+
+// FailTask marks the current task as failed.
+func (a *Agent) FailTask(taskID, reason string) error {
+	// Business rules validation
+	if a.currentTaskID == nil {
+		return ErrNoTaskInProgress
+	}
+
+	if *a.currentTaskID != taskID {
+		return errors.New(
+			errors.ErrorTypeValidation,
+			ErrCodeInvalidTaskTransition,
+			"task ID mismatch",
+		).WithDetail("expected_task_id", *a.currentTaskID).
+			WithDetail("provided_task_id", taskID)
+	}
+
+	if reason == "" {
+		return errors.RequiredField("reason")
+	}
+
+	// Generate and apply event
+	event := NewAgentTaskFailed(
+		a.id.String(),
+		taskID,
+		reason,
 		a.nextSequenceNumber(),
 	)
 
@@ -260,24 +308,36 @@ func (a *Agent) Name() string {
 	return a.name
 }
 
-func (a *Agent) Type() AgentType {
-	return a.agentType
+func (a *Agent) Provider() Provider {
+	return a.provider
 }
 
-func (a *Agent) Status() Status {
+func (a *Agent) Model() Model {
+	return a.model
+}
+
+func (a *Agent) Status() AgentStatus {
 	return a.status
 }
 
-func (a *Agent) Location() *Location {
-	return a.location
+func (a *Agent) CurrentTaskID() *string {
+	return a.currentTaskID
 }
 
-func (a *Agent) DeployedAt() *time.Time {
-	return a.deployedAt
+func (a *Agent) ActivatedAt() *time.Time {
+	return a.activatedAt
 }
 
 func (a *Agent) DeactivatedAt() *time.Time {
 	return a.deactivatedAt
+}
+
+func (a *Agent) IsActive() bool {
+	return a.status == StatusActive
+}
+
+func (a *Agent) IsBusy() bool {
+	return a.status == StatusBusy
 }
 
 func (a *Agent) IsDeactivated() bool {

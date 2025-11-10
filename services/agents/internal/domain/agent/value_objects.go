@@ -33,109 +33,101 @@ func (id AgentID) Equals(other AgentID) bool {
 	return id.value == other.value
 }
 
-// Status represents an agent's operational status.
-type Status string
+// AgentStatus represents an agent's operational status.
+type AgentStatus string
 
 const (
-	StatusCreated     Status = "created"
-	StatusDeployed    Status = "deployed"
-	StatusActive      Status = "active"
-	StatusInactive    Status = "inactive"
-	StatusOffline     Status = "offline"
-	StatusDeactivated Status = "deactivated"
+	StatusInitialized AgentStatus = "initialized" // Created but not active
+	StatusActive      AgentStatus = "active"      // Ready to receive tasks
+	StatusBusy        AgentStatus = "busy"        // Processing a task
+	StatusDeactivated AgentStatus = "deactivated" // Stopped
 )
 
 // String returns the string representation.
-func (s Status) String() string {
+func (s AgentStatus) String() string {
 	return string(s)
 }
 
 // IsValid checks if the status is valid.
-func (s Status) IsValid() bool {
+func (s AgentStatus) IsValid() bool {
 	switch s {
-	case StatusCreated, StatusDeployed, StatusActive, StatusInactive, StatusOffline, StatusDeactivated:
+	case StatusInitialized, StatusActive, StatusBusy, StatusDeactivated:
 		return true
 	}
 	return false
 }
 
-// CanTransitionTo checks if a status transition is valid.
-func (s Status) CanTransitionTo(newStatus Status) bool {
-	transitions := map[Status][]Status{
-		StatusCreated:     {StatusDeployed, StatusDeactivated},
-		StatusDeployed:    {StatusActive, StatusInactive, StatusDeactivated},
-		StatusActive:      {StatusInactive, StatusOffline, StatusDeactivated},
-		StatusInactive:    {StatusActive, StatusOffline, StatusDeactivated},
-		StatusOffline:     {StatusActive, StatusInactive, StatusDeactivated},
-		StatusDeactivated: {}, // Terminal state
+// ParseAgentStatus parses a string into an AgentStatus.
+func ParseAgentStatus(s string) (AgentStatus, error) {
+	status := AgentStatus(s)
+	if !status.IsValid() {
+		return "", fmt.Errorf("invalid agent status: %s", s)
 	}
-
-	validTransitions, ok := transitions[s]
-	if !ok {
-		return false
-	}
-
-	for _, validStatus := range validTransitions {
-		if validStatus == newStatus {
-			return true
-		}
-	}
-
-	return false
+	return status, nil
 }
 
-// AgentType represents the type/role of an agent.
-type AgentType string
+// Provider represents the LLM provider.
+type Provider string
 
 const (
-	AgentTypeFieldResponder  AgentType = "field_responder"
-	AgentTypeIncidentManager AgentType = "incident_manager"
-	AgentTypeCoordinator     AgentType = "coordinator"
-	AgentTypeMedic           AgentType = "medic"
-	AgentTypeSpecialist      AgentType = "specialist"
+	ProviderAnthropic Provider = "anthropic"
+	ProviderOpenAI    Provider = "openai"
+	ProviderLocal     Provider = "local" // For testing
 )
 
 // String returns the string representation.
-func (t AgentType) String() string {
-	return string(t)
+func (p Provider) String() string {
+	return string(p)
 }
 
-// IsValid checks if the agent type is valid.
-func (t AgentType) IsValid() bool {
-	switch t {
-	case AgentTypeFieldResponder, AgentTypeIncidentManager, AgentTypeCoordinator, AgentTypeMedic, AgentTypeSpecialist:
+// IsValid checks if the provider is valid.
+func (p Provider) IsValid() bool {
+	switch p {
+	case ProviderAnthropic, ProviderOpenAI, ProviderLocal:
 		return true
 	}
 	return false
 }
 
-// ParseAgentType parses a string into an AgentType.
-func ParseAgentType(s string) (AgentType, error) {
-	t := AgentType(s)
-	if !t.IsValid() {
-		return "", fmt.Errorf("invalid agent type: %s", s)
+// ParseProvider parses a string into a Provider.
+func ParseProvider(s string) (Provider, error) {
+	p := Provider(s)
+	if !p.IsValid() {
+		return "", fmt.Errorf("invalid provider: %s", s)
 	}
-	return t, nil
+	return p, nil
 }
 
-// Location represents a geographic location.
-type Location struct {
-	Latitude  float64
-	Longitude float64
+// Model represents the LLM model.
+type Model string
+
+const (
+	ModelClaude35Sonnet Model = "claude-3-5-sonnet-20241022"
+	ModelClaude3Opus    Model = "claude-3-opus-20240229"
+	ModelGPT4           Model = "gpt-4"
+	ModelGPT4Turbo      Model = "gpt-4-turbo"
+	ModelGPT35Turbo     Model = "gpt-3.5-turbo"
+)
+
+// String returns the string representation.
+func (m Model) String() string {
+	return string(m)
 }
 
-// NewLocation creates a new Location.
-func NewLocation(lat, lon float64) (Location, error) {
-	if lat < -90 || lat > 90 {
-		return Location{}, fmt.Errorf("invalid latitude: %f", lat)
+// IsValid checks if the model is valid.
+func (m Model) IsValid() bool {
+	switch m {
+	case ModelClaude35Sonnet, ModelClaude3Opus, ModelGPT4, ModelGPT4Turbo, ModelGPT35Turbo:
+		return true
 	}
-	if lon < -180 || lon > 180 {
-		return Location{}, fmt.Errorf("invalid longitude: %f", lon)
-	}
-	return Location{Latitude: lat, Longitude: lon}, nil
+	return false
 }
 
-// Equals checks if two locations are equal.
-func (l Location) Equals(other Location) bool {
-	return l.Latitude == other.Latitude && l.Longitude == other.Longitude
+// ParseModel parses a string into a Model.
+func ParseModel(s string) (Model, error) {
+	m := Model(s)
+	if !m.IsValid() {
+		return "", fmt.Errorf("invalid model: %s", s)
+	}
+	return m, nil
 }
