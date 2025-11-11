@@ -9,7 +9,7 @@ import (
 	"os"
 
 	"github.com/0xsj/scout/services/agents/config"
-	"github.com/0xsj/scout/services/agents/internal/infrastructure/persistence/postgres"
+	"github.com/0xsj/scout/services/agents/internal/infrastructure/eventstore/postgres"
 	_ "github.com/lib/pq"
 )
 

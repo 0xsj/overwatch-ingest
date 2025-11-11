@@ -9,23 +9,18 @@ import (
 
 // Domain error codes
 const (
-	ErrCodeInvalidAgentID       errors.Code = "AGENT:INVALID_ID"
-	ErrCodeInvalidProvider      errors.Code = "AGENT:INVALID_PROVIDER"
-	ErrCodeInvalidModel         errors.Code = "AGENT:INVALID_MODEL"
-	ErrCodeInvalidStatus        errors.Code = "AGENT:INVALID_STATUS"
-	ErrCodeAgentNotInitialized  errors.Code = "AGENT:NOT_INITIALIZED"
-	ErrCodeAgentAlreadyActive   errors.Code = "AGENT:ALREADY_ACTIVE"
-	ErrCodeAgentDeactivated     errors.Code = "AGENT:DEACTIVATED"
-	ErrCodeAgentBusy            errors.Code = "AGENT:BUSY"
-	ErrCodeNoTaskInProgress     errors.Code = "AGENT:NO_TASK_IN_PROGRESS"
-	ErrCodeInvalidTaskTransition errors.Code = "AGENT:INVALID_TASK_TRANSITION"
+	ErrCodeInvalidAgentID     errors.Code = "AGENT:INVALID_ID"
+	ErrCodeInvalidProvider    errors.Code = "AGENT:INVALID_PROVIDER"
+	ErrCodeInvalidModel       errors.Code = "AGENT:INVALID_MODEL"
+	ErrCodeInvalidStatus      errors.Code = "AGENT:INVALID_STATUS"
+	ErrCodeAgentAlreadyActive errors.Code = "AGENT:ALREADY_ACTIVE"
+	ErrCodeAgentDeactivated   errors.Code = "AGENT:DEACTIVATED"
+	ErrCodeAgentBusy          errors.Code = "AGENT:BUSY"
+	ErrCodeNoTaskInProgress   errors.Code = "AGENT:NO_TASK_IN_PROGRESS"
 )
 
 // Domain errors
 var (
-	// ErrAgentNotInitialized is returned when trying to operate on a non-initialized agent
-	ErrAgentNotInitialized = errors.Validation("agent has not been initialized")
-
 	// ErrAgentAlreadyActive is returned when trying to activate an already active agent
 	ErrAgentAlreadyActive = errors.Conflict("agent", "agent is already active")
 
