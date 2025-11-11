@@ -127,28 +127,28 @@ services:
       retries: 5
 
   # OpenTelemetry Collector
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.91.0
-    container_name: scout-otel-collector
-    command: ["--config=/etc/otelcol/config.yml"]
-    ports:
-      - "1888:1888"   # pprof extension
-      - "8888:8888"   # Prometheus metrics
-      - "8889:8889"   # Prometheus exporter metrics
-      - "13133:13133" # health_check extension
-      - "4317:4317"   # OTLP gRPC receiver (main entry point)
-      - "4318:4318"   # OTLP HTTP receiver
-      - "55679:55679" # zpages extension
-    volumes:
-      - ./config/otel-collector-config.yml:/etc/otelcol/config.yml:ro
-    depends_on:
-      - jaeger
-      - prometheus
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:13133/"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+  # otel-collector:
+  #   image: otel/opentelemetry-collector-contrib:0.91.0
+  #   container_name: scout-otel-collector
+  #   command: ["--config=/etc/otelcol/config.yml"]
+  #   ports:
+  #     - "1888:1888"   # pprof extension
+  #     - "8888:8888"   # Prometheus metrics
+  #     - "8889:8889"   # Prometheus exporter metrics
+  #     - "13133:13133" # health_check extension
+  #     - "4317:4317"   # OTLP gRPC receiver (main entry point)
+  #     - "4318:4318"   # OTLP HTTP receiver
+  #     - "55679:55679" # zpages extension
+  #   volumes:
+  #     - ./config/otel-collector-config.yml:/etc/otelcol/config.yml:ro
+  #   depends_on:
+  #     - jaeger
+  #     - prometheus
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:13133/"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
 volumes:
   postgres_data:

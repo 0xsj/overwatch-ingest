@@ -2,6 +2,7 @@
 package config
 
 import (
+	"fmt"
 	"time"
 
 	pkgconfig "github.com/0xsj/scout/platform/pkg/config"
@@ -30,6 +31,8 @@ type PostgresConfig interface {
 	MaxConnections() int
 	MaxIdleConnections() int
 	ConnectionTimeout() time.Duration
+	// DSN returns the full connection string
+	DSN() string
 }
 
 type RedisConfig interface {
@@ -90,6 +93,14 @@ func (c *envPostgresConfig) MaxConnections() int              { return c.maxConn
 func (c *envPostgresConfig) MaxIdleConnections() int          { return c.maxIdleConnections }
 func (c *envPostgresConfig) ConnectionTimeout() time.Duration { return c.connectionTimeout }
 
+// DSN returns the PostgreSQL connection string
+func (c *envPostgresConfig) DSN() string {
+	return fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		c.host, c.port, c.user, c.password, c.database,
+	)
+}
+
 type envRedisConfig struct {
 	host       string
 	port       int
@@ -143,30 +154,16 @@ func Load(usePrefix bool) (Config, error) {
 	logLevel := pkgconfig.LoadStringOptional(key("LOG_LEVEL"), "info")
 
 	// Postgres config
-	postgresHost, err := pkgconfig.LoadStringRequired(key("POSTGRES_HOST"))
-	if err != nil {
-		return nil, err
-	}
-
+	postgresHost := pkgconfig.LoadStringOptional(key("POSTGRES_HOST"), "localhost")
+	
 	postgresPort, err := pkgconfig.LoadPortOptional(key("POSTGRES_PORT"), 5432)
 	if err != nil {
 		return nil, err
 	}
 
-	postgresUser, err := pkgconfig.LoadStringRequired(key("POSTGRES_USER"))
-	if err != nil {
-		return nil, err
-	}
-
-	postgresPassword, err := pkgconfig.LoadStringRequired(key("POSTGRES_PASSWORD"))
-	if err != nil {
-		return nil, err
-	}
-
-	postgresDB, err := pkgconfig.LoadStringRequired(key("POSTGRES_DB"))
-	if err != nil {
-		return nil, err
-	}
+	postgresUser := pkgconfig.LoadStringOptional(key("POSTGRES_USER"), "scout")
+	postgresPassword := pkgconfig.LoadStringOptional(key("POSTGRES_PASSWORD"), "scout_dev_password")
+	postgresDB := pkgconfig.LoadStringOptional(key("POSTGRES_DB"), "agents_db")
 
 	postgresMaxConns, err := pkgconfig.LoadIntOptional(key("POSTGRES_MAX_CONNECTIONS"), 25)
 	if err != nil {
@@ -184,11 +181,8 @@ func Load(usePrefix bool) (Config, error) {
 	}
 
 	// Redis config
-	redisHost, err := pkgconfig.LoadStringRequired(key("REDIS_HOST"))
-	if err != nil {
-		return nil, err
-	}
-
+	redisHost := pkgconfig.LoadStringOptional(key("REDIS_HOST"), "localhost")
+	
 	redisPort, err := pkgconfig.LoadPortOptional(key("REDIS_PORT"), 6379)
 	if err != nil {
 		return nil, err
@@ -205,11 +199,8 @@ func Load(usePrefix bool) (Config, error) {
 	}
 
 	// NATS config
-	natsURL, err := pkgconfig.LoadStringRequired(key("NATS_URL"))
-	if err != nil {
-		return nil, err
-	}
-
+	natsURL := pkgconfig.LoadStringOptional(key("NATS_URL"), "nats://localhost:4222")
+	
 	natsMaxReconnects, err := pkgconfig.LoadIntOptional(key("NATS_MAX_RECONNECTS"), 10)
 	if err != nil {
 		return nil, err
