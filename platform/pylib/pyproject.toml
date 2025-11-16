@@ -8,6 +8,7 @@ packages = [{include = "scout_common"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"
+nats-py = "^2.7.0"
 structlog = "^25.5.0"
 grpcio = "^1.76.0"
 grpcio-tools = "^1.76.0"
