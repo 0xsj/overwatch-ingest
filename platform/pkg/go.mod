@@ -3,6 +3,7 @@ module github.com/0xsj/scout/platform/pkg
 go 1.25.3
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/nats-io/nats.go v1.47.0
 	go.uber.org/zap v1.27.0
