@@ -1,99 +1,43 @@
-# Go
+# Binaries
+bin/
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
-*.test
-*.out
-go.work.sum
-vendor/
-dist/
-bin/
-tmp/
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-.pytest_cache/
-.coverage
-.coverage.*
-htmlcov/
-.tox/
-.nox/
-.hypothesis/
-.pytype/
-cov.xml
-*.cover
+# Test binary
+*.test
+
+# Output
+*.out
 *.log
 
-# Poetry
-poetry.lock
-.venv/
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+# Go
+go.sum.bak
+vendor/
 
-# IDEs
-.vscode/
+# IDE
 .idea/
+.vscode/
 *.swp
 *.swo
 *~
-.DS_Store
-
-# Environment variables
-.env
-.env.local
-.env.*.local
-*.env
-
-# Logs
-logs/
-*.log
-
-# Docker
-*.pid
-*.seed
-*.pid.lock
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Test coverage
-coverage/
-.nyc_output/
+# Environment
+.env
+.env.local
+.env.*.local
 
-# Temporary files
-*.tmp
-*.temp
-.cache/
+# Build
+dist/
+build/
+tmp/
+
+# Coverage
+coverage.out
+coverage.html

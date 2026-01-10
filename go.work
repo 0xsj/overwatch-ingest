@@ -1,8 +1,0 @@
-go 1.25.3
-
-use (
-	./gateway
-	./platform/pkg
-	./services/agents
-	./services/incidents
-)
