@@ -213,7 +213,7 @@ func (h *processRawDataHandler) verifyCollectorSignature(ctx context.Context, cm
 		cmd.RawDataID,
 		cmd.CollectorSigner.DID,
 		"collector",
-		cmd.CollectorSigner.SignedAt,
+		types.FromTime(cmd.CollectorSigner.SignedAt),
 	))
 
 	return true, nil
@@ -254,7 +254,7 @@ func (h *processRawDataHandler) verifySourceSignature(ctx context.Context, cmd c
 		cmd.RawDataID,
 		cmd.SourceSigner.DID,
 		"source",
-		cmd.SourceSigner.SignedAt,
+		types.FromTime(cmd.SourceSigner.SignedAt),
 	))
 
 	return true
