@@ -1,0 +1,24 @@
+package messaging
+
+import (
+	"context"
+
+	"github.com/0xsj/overwatch-ingest/internal/domain/event"
+)
+
+type EventPublisher interface {
+	Publish(ctx context.Context, evt event.Event) error
+	PublishRecordReceived(ctx context.Context, evt event.RecordReceived) error
+	PublishRecordValidated(ctx context.Context, evt event.RecordValidated) error
+	PublishRecordAccepted(ctx context.Context, evt event.RecordAccepted) error
+	PublishRecordRejected(ctx context.Context, evt event.RecordRejected) error
+	PublishRecordQuarantined(ctx context.Context, evt event.RecordQuarantined) error
+	PublishBatchReceived(ctx context.Context, evt event.BatchReceived) error
+	PublishBatchCompleted(ctx context.Context, evt event.BatchCompleted) error
+	PublishQuarantineResolved(ctx context.Context, evt event.QuarantineResolved) error
+	PublishQuarantineExpired(ctx context.Context, evt event.QuarantineExpired) error
+	PublishSignatureVerified(ctx context.Context, evt event.SignatureVerified) error
+	PublishSignatureFailed(ctx context.Context, evt event.SignatureFailed) error
+	PublishSourceReliabilityUpdated(ctx context.Context, evt event.SourceReliabilityUpdated) error
+	PublishIngestError(ctx context.Context, evt event.IngestError) error
+}
