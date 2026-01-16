@@ -65,7 +65,7 @@ sqlc:
 # ─────────────────────────────────────────────────────────────────
 
 MIGRATE := migrate
-DB_URL ?= postgres://overwatch:overwatch@localhost:5432/overwatch_ingest?sslmode=disable
+DB_URL ?= postgres://overwatch:overwatch@localhost:5450/overwatch_ingest?sslmode=disable
 
 migrate-up:
 	$(MIGRATE) -path migrations -database "$(DB_URL)" up
