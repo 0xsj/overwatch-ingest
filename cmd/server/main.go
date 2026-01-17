@@ -141,7 +141,7 @@ func run() error {
 		logger,
 		processRawDataHandler,
 		natsadapter.RawDataConsumerConfig{
-			SubjectPattern:   cfg.NATS.SubjectPrefix + ".raw.*",
+			SubjectPattern:   cfg.NATS.SubjectPrefix + ".ingest.raw.*",
 			QueueGroup:       "ingest-service",
 			VerifySignatures: cfg.Ingest.RequireCollectorSignature,
 		},
