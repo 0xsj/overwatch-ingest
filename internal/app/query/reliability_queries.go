@@ -2,6 +2,7 @@ package query
 
 import (
 	"context"
+	"errors"
 
 	domainerror "github.com/0xsj/overwatch-ingest/internal/domain/error"
 	"github.com/0xsj/overwatch-ingest/internal/domain/model"
@@ -26,6 +27,9 @@ func (h *getSourceReliabilityHandler) Handle(ctx context.Context, qry query.GetS
 
 	reliability, err := h.reliabilityRepo.FindBySourceID(ctx, qry.SourceID)
 	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return query.GetSourceReliabilityResult{}, domainerror.ErrSourceReliabilityNotFound
+		}
 		return query.GetSourceReliabilityResult{}, err
 	}
 	if reliability == nil {
