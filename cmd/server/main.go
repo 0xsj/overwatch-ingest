@@ -115,6 +115,10 @@ func run() error {
 		signer,
 	)
 
+	bulkResolveQuarantinedHandler := command.NewBulkResolveQuarantinedHandler(
+		resolveQuarantinedHandler,
+	)
+
 	reprocessRecordHandler := command.NewReprocessRecordHandler(
 		recordRepo,
 		processRawDataHandler,
@@ -159,7 +163,7 @@ func run() error {
 
 	handler := ingestgrpc.NewHandler(ingestgrpc.HandlerConfig{
 		ResolveQuarantinedHandler:     resolveQuarantinedHandler,
-		BulkResolveQuarantinedHandler: nil,
+		BulkResolveQuarantinedHandler: bulkResolveQuarantinedHandler,
 		ReprocessRecordHandler:        reprocessRecordHandler,
 		ReprocessBySourceHandler:      reprocessBySourceHandler,
 

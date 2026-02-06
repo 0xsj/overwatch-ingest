@@ -220,3 +220,54 @@ func (h *resolveQuarantinedHandler) optionalString(s string) types.Optional[stri
 	}
 	return types.Some(s)
 }
+
+// =============================================================================
+// Bulk Resolve
+// =============================================================================
+
+type bulkResolveQuarantinedHandler struct {
+	resolveHandler command.ResolveQuarantinedHandler
+}
+
+func NewBulkResolveQuarantinedHandler(
+	resolveHandler command.ResolveQuarantinedHandler,
+) command.BulkResolveQuarantinedHandler {
+	return &bulkResolveQuarantinedHandler{
+		resolveHandler: resolveHandler,
+	}
+}
+
+func (h *bulkResolveQuarantinedHandler) Handle(ctx context.Context, cmd command.BulkResolveQuarantined) (command.BulkResolveQuarantinedResult, error) {
+	if len(cmd.QuarantineIDs) == 0 {
+		return command.BulkResolveQuarantinedResult{}, domainerror.ErrRecordIDRequired
+	}
+
+	var resolvedCount int
+	var failedIDs []types.ID
+	var errors []string
+
+	for _, id := range cmd.QuarantineIDs {
+		resolveCmd := command.ResolveQuarantined{
+			QuarantineID:  id,
+			Resolution:    cmd.Resolution,
+			ResolvedBy:    cmd.ResolvedBy,
+			ResolvedByDID: cmd.ResolvedByDID,
+			Notes:         cmd.Notes,
+		}
+
+		_, err := h.resolveHandler.Handle(ctx, resolveCmd)
+		if err != nil {
+			failedIDs = append(failedIDs, id)
+			errors = append(errors, err.Error())
+			continue
+		}
+
+		resolvedCount++
+	}
+
+	return command.BulkResolveQuarantinedResult{
+		ResolvedCount: resolvedCount,
+		FailedIDs:     failedIDs,
+		Errors:        errors,
+	}, nil
+}
