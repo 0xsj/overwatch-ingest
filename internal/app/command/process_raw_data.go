@@ -536,6 +536,9 @@ func (h *processRawDataHandler) inferEntityType(sourceType string, payload map[s
 	if _, ok := payload["icao"]; ok {
 		return "aircraft"
 	}
+	if _, ok := payload["mag"]; ok {
+		return "earthquake"
+	}
 	if _, ok := payload["lat"]; ok {
 		if _, ok := payload["lon"]; ok {
 			return "location"
@@ -550,6 +553,9 @@ func (h *processRawDataHandler) inferEntityID(sourceType string, payload map[str
 	}
 	if icao, ok := payload["icao"]; ok {
 		return "icao:" + toString(icao)
+	}
+	if eqID, ok := payload["earthquake_id"]; ok {
+		return "earthquake:" + toString(eqID)
 	}
 	return "unknown"
 }
