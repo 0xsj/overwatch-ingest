@@ -26,12 +26,12 @@ type EventPublisher interface {
 }
 
 const (
-	TopicRecordEvents      = "ingest.record"
-	TopicBatchEvents       = "ingest.batch"
-	TopicQuarantineEvents  = "ingest.quarantine"
-	TopicSignatureEvents   = "ingest.signature"
-	TopicReliabilityEvents = "ingest.reliability"
-	TopicErrorEvents       = "ingest.error"
+	TopicRecordEvents      = "record"
+	TopicBatchEvents       = "batch"
+	TopicQuarantineEvents  = "quarantine"
+	TopicSignatureEvents   = "signature"
+	TopicReliabilityEvents = "reliability"
+	TopicErrorEvents       = "error"
 )
 
 func TopicForEvent(evt event.Event) string {

@@ -145,7 +145,7 @@ func run() error {
 		logger,
 		processRawDataHandler,
 		natsadapter.RawDataConsumerConfig{
-			SubjectPattern:   cfg.NATS.SubjectPrefix + ".ingest.raw.*",
+			SubjectPattern:   "overwatch.ingest.raw.*",
 			QueueGroup:       "ingest-service",
 			VerifySignatures: cfg.Ingest.RequireCollectorSignature,
 		},
@@ -157,7 +157,7 @@ func run() error {
 	defer rawDataConsumer.Stop()
 
 	logger.Info("raw data consumer started",
-		log.String("subject_pattern", cfg.NATS.SubjectPrefix+".raw.*"),
+		log.String("subject_pattern", "overwatch.ingest.raw.*"),
 		log.String("queue_group", "ingest-service"),
 	)
 

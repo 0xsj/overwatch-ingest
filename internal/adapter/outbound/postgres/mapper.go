@@ -16,6 +16,13 @@ import (
 // pgtype helpers
 // =============================================================================
 
+func ensureStringSlice(s []string) []string {
+	if s == nil {
+		return []string{}
+	}
+	return s
+}
+
 func stringToPgText(s string) pgtype.Text {
 	if s == "" {
 		return pgtype.Text{Valid: false}
@@ -297,8 +304,8 @@ func toCreateIngestRecordParams(r *model.IngestRecord) sqlc.CreateIngestRecordPa
 		Status:                      ingestStatusToString(r.Status()),
 		ValidationValid:             r.Validation().Valid(),
 		ValidationSchemaValid:       r.Validation().SchemaValid(),
-		ValidationFieldsPresent:     r.Validation().FieldsPresent(),
-		ValidationFieldsMissing:     r.Validation().FieldsMissing(),
+		ValidationFieldsPresent:     ensureStringSlice(r.Validation().FieldsPresent()),
+		ValidationFieldsMissing:     ensureStringSlice(r.Validation().FieldsMissing()),
 		ValidationAnomalies:         anomaliesToJSON(r.Validation().Anomalies()),
 		ValidationValidatorVersion:  stringToPgText(r.Validation().ValidatorVersion()),
 		ConfidenceOverall:           float32(r.Confidence().Overall()),
@@ -309,7 +316,7 @@ func toCreateIngestRecordParams(r *model.IngestRecord) sqlc.CreateIngestRecordPa
 		ConfidenceFactors:           confidenceFactorsToJSON(r.Confidence().Factors()),
 		EntityType:                  optionalStringToPgText(r.EntityType()),
 		EntityID:                    optionalStringToPgText(r.EntityID()),
-		EventIds:                    r.EventIDs(),
+		EventIds:                    ensureStringSlice(r.EventIDs()),
 		RejectionReason:             optionalStringToPgText(r.RejectionReason()),
 		QuarantineID:                optionalIDToPgText(r.QuarantineID()),
 		SourceSigner:                signerInfoToJSON(r.SourceSigner()),
@@ -328,8 +335,8 @@ func toUpdateIngestRecordParams(r *model.IngestRecord) sqlc.UpdateIngestRecordPa
 		Status:                      ingestStatusToString(r.Status()),
 		ValidationValid:             r.Validation().Valid(),
 		ValidationSchemaValid:       r.Validation().SchemaValid(),
-		ValidationFieldsPresent:     r.Validation().FieldsPresent(),
-		ValidationFieldsMissing:     r.Validation().FieldsMissing(),
+		ValidationFieldsPresent:     ensureStringSlice(r.Validation().FieldsPresent()),
+		ValidationFieldsMissing:     ensureStringSlice(r.Validation().FieldsMissing()),
 		ValidationAnomalies:         anomaliesToJSON(r.Validation().Anomalies()),
 		ValidationValidatorVersion:  stringToPgText(r.Validation().ValidatorVersion()),
 		ConfidenceOverall:           float32(r.Confidence().Overall()),
@@ -340,7 +347,7 @@ func toUpdateIngestRecordParams(r *model.IngestRecord) sqlc.UpdateIngestRecordPa
 		ConfidenceFactors:           confidenceFactorsToJSON(r.Confidence().Factors()),
 		EntityType:                  optionalStringToPgText(r.EntityType()),
 		EntityID:                    optionalStringToPgText(r.EntityID()),
-		EventIds:                    r.EventIDs(),
+		EventIds:                    ensureStringSlice(r.EventIDs()),
 		RejectionReason:             optionalStringToPgText(r.RejectionReason()),
 		QuarantineID:                optionalIDToPgText(r.QuarantineID()),
 		SourceSigner:                signerInfoToJSON(r.SourceSigner()),
