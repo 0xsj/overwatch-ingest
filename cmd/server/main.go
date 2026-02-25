@@ -232,25 +232,21 @@ func run() error {
 }
 
 func initializeProvenance(cfg config.ServiceIdentityConfig, logger log.Logger) (provenance.Identity, *provenance.EnvelopeBuilder, provenance.Verifier, error) {
-	var identity *provenance.ServiceIdentity
-	var err error
-
-	if cfg.HasPrivateKey() {
-		logger.Warn("private key loading not yet implemented, generating new identity")
-		identity, err = provenance.GenerateServiceIdentity(cfg.ID, cfg.Name)
-	} else if cfg.GenerateIfMissing {
-		identity, err = provenance.GenerateServiceIdentity(cfg.ID, cfg.Name)
-		if err == nil {
-			logger.Warn("generated new service identity - consider persisting the private key",
-				log.String("did", identity.DID()),
-			)
-		}
-	} else {
-		return nil, nil, nil, fmt.Errorf("no private key configured and generation disabled")
+	identity, err := provenance.LoadServiceIdentity(provenance.LoadServiceIdentityConfig{
+		ID:                cfg.ID,
+		Name:              cfg.Name,
+		PrivateKeyBase64:  cfg.PrivateKeyBase64,
+		PrivateKeyPath:    cfg.PrivateKeyPath,
+		GenerateIfMissing: cfg.GenerateIfMissing,
+	})
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to load service identity: %w", err)
 	}
 
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to create identity: %w", err)
+	if !cfg.HasPrivateKey() {
+		logger.Warn("using generated service identity - consider persisting the private key",
+			log.String("did", identity.DID()),
+		)
 	}
 
 	signer, err := provenance.NewEnvelopeBuilder(identity)

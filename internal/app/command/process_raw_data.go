@@ -185,6 +185,26 @@ func (h *processRawDataHandler) verifyCollectorSignature(ctx context.Context, cm
 
 	record.SetCollectorSigner(cmd.CollectorSigner, false)
 
+	// If the envelope was already verified at the transport layer (NATS consumer),
+	// trust that result instead of re-verifying against the inner payload
+	// (which would fail because the collector signs the full envelope, not just the payload).
+	if cmd.EnvelopeVerified {
+		record.SetCollectorSigner(cmd.CollectorSigner, true)
+
+		_ = h.publisher.PublishSignatureVerified(ctx, event.NewSignatureVerified(
+			cmd.TenantID,
+			cmd.SourceID,
+			record.ID(),
+			cmd.RawDataID,
+			cmd.CollectorSigner.DID,
+			"collector",
+			types.FromTime(cmd.CollectorSigner.SignedAt),
+		))
+
+		return true, nil
+	}
+
+	// Fallback: verify against payload bytes for non-envelope sources (e.g., HTTP).
 	payloadBytes, err := json.Marshal(cmd.Payload)
 	if err != nil {
 		return false, domainerror.ErrPayloadInvalid

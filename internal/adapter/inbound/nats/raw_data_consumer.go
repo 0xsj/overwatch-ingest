@@ -201,19 +201,20 @@ func (c *RawDataConsumer) buildCommand(payload rawDataPayload, envelope *provena
 	}
 
 	return command.ProcessRawData{
-		TenantID:        tenantID,
-		SourceID:        sourceID,
-		SourceType:      payload.SourceType,
-		RawDataID:       payload.ID,
-		Payload:         payload.Payload,
-		Metadata:        payload.Metadata,
-		SourceTimestamp: sourceTimestamp,
-		CollectedAt:     collectedAt,
-		SourceSigner:    sourceSigner,
-		CollectorSigner: collectorSigner,
-		JobID:           jobID,
-		BatchID:         batchID,
-		BatchIndex:      batchIndex,
+		TenantID:         tenantID,
+		SourceID:         sourceID,
+		SourceType:       payload.SourceType,
+		RawDataID:        payload.ID,
+		Payload:          payload.Payload,
+		Metadata:         payload.Metadata,
+		SourceTimestamp:  sourceTimestamp,
+		CollectedAt:      collectedAt,
+		SourceSigner:     sourceSigner,
+		CollectorSigner:  collectorSigner,
+		EnvelopeVerified: c.verifySignatures,
+		JobID:            jobID,
+		BatchID:          batchID,
+		BatchIndex:       batchIndex,
 	}, nil
 }
 

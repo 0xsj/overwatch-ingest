@@ -8,19 +8,20 @@ import (
 )
 
 type ProcessRawData struct {
-	TenantID        types.Optional[types.ID]
-	SourceID        types.ID
-	SourceType      string
-	RawDataID       string
-	Payload         map[string]any
-	Metadata        map[string]string
-	SourceTimestamp types.Optional[types.Timestamp]
-	CollectedAt     types.Timestamp
-	SourceSigner    *provenance.SignatureInfo
-	CollectorSigner *provenance.SignatureInfo
-	JobID           types.Optional[types.ID]
-	BatchID         types.Optional[types.ID]
-	BatchIndex      types.Optional[int32]
+	TenantID         types.Optional[types.ID]
+	SourceID         types.ID
+	SourceType       string
+	RawDataID        string
+	Payload          map[string]any
+	Metadata         map[string]string
+	SourceTimestamp  types.Optional[types.Timestamp]
+	CollectedAt      types.Timestamp
+	SourceSigner     *provenance.SignatureInfo
+	CollectorSigner  *provenance.SignatureInfo
+	EnvelopeVerified bool // True when the NATS envelope signature was already verified
+	JobID            types.Optional[types.ID]
+	BatchID          types.Optional[types.ID]
+	BatchIndex       types.Optional[int32]
 }
 
 func (c ProcessRawData) CommandName() string {
