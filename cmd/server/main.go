@@ -20,6 +20,7 @@ import (
 	"github.com/0xsj/overwatch-ingest/internal/adapter/outbound/validation"
 	"github.com/0xsj/overwatch-ingest/internal/app/command"
 	"github.com/0xsj/overwatch-ingest/internal/app/query"
+	"github.com/0xsj/overwatch-ingest/internal/app/service"
 	"github.com/0xsj/overwatch-ingest/internal/config"
 	portvalidation "github.com/0xsj/overwatch-ingest/internal/port/outbound/validation"
 )
@@ -138,6 +139,17 @@ func run() error {
 	listSourceReliabilityHandler := query.NewListSourceReliabilityHandler(reliabilityRepo)
 	getIngestStatsHandler := query.NewGetIngestStatsHandler(recordRepo, quarantineRepo)
 
+	validationPipeline := service.NewValidationPipeline(
+		schemaValidator,
+		anomalyDetector,
+		confidenceScorer,
+		portvalidation.ScoringThresholds{
+			AcceptThreshold: cfg.Ingest.AcceptThreshold,
+			RejectThreshold: cfg.Ingest.RejectThreshold,
+		},
+	)
+	validateDataHandler := query.NewValidateDataHandler(validationPipeline, reliabilityRepo)
+
 	_ = getQuarantinedByIngestRecordHandler
 
 	rawDataConsumer := natsadapter.NewRawDataConsumer(
@@ -175,6 +187,7 @@ func run() error {
 		GetSourceReliabilityHandler:  getSourceReliabilityHandler,
 		ListSourceReliabilityHandler: listSourceReliabilityHandler,
 		GetIngestStatsHandler:        getIngestStatsHandler,
+		ValidateDataHandler:          validateDataHandler,
 	})
 
 	loggingInterceptor := ingestgrpc.NewLoggingInterceptor(newGRPCLogger(logger))

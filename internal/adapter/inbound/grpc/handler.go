@@ -30,6 +30,7 @@ type Handler struct {
 	getSourceReliabilityHandler  query.GetSourceReliabilityHandler
 	listSourceReliabilityHandler query.ListSourceReliabilityHandler
 	getIngestStatsHandler        query.GetIngestStatsHandler
+	validateDataHandler          query.ValidateDataHandler
 }
 
 type HandlerConfig struct {
@@ -46,6 +47,7 @@ type HandlerConfig struct {
 	GetSourceReliabilityHandler  query.GetSourceReliabilityHandler
 	ListSourceReliabilityHandler query.ListSourceReliabilityHandler
 	GetIngestStatsHandler        query.GetIngestStatsHandler
+	ValidateDataHandler          query.ValidateDataHandler
 }
 
 func NewHandler(cfg HandlerConfig) *Handler {
@@ -63,6 +65,7 @@ func NewHandler(cfg HandlerConfig) *Handler {
 		getSourceReliabilityHandler:  cfg.GetSourceReliabilityHandler,
 		listSourceReliabilityHandler: cfg.ListSourceReliabilityHandler,
 		getIngestStatsHandler:        cfg.GetIngestStatsHandler,
+		validateDataHandler:          cfg.ValidateDataHandler,
 	}
 }
 
@@ -333,11 +336,32 @@ func (h *Handler) ReprocessBySource(ctx context.Context, req *ingestv1.Reprocess
 // =============================================================================
 
 func (h *Handler) ValidateData(ctx context.Context, req *ingestv1.ValidateDataRequest) (*ingestv1.ValidateDataResponse, error) {
-	// TODO: Implement when validation preview handler is added
+	if h.validateDataHandler == nil {
+		return &ingestv1.ValidateDataResponse{
+			Validation:      validationResultToProto(model.ValidationResult{}),
+			Confidence:      confidenceScoreToProto(model.ConfidenceScore{}),
+			PredictedStatus: ingestv1.IngestStatus_INGEST_STATUS_UNSPECIFIED,
+		}, nil
+	}
+
+	var payload map[string]any
+	if req.GetData() != nil {
+		payload = req.GetData().AsMap()
+	}
+
+	result, err := h.validateDataHandler.Handle(ctx, query.ValidateData{
+		SourceID:   req.GetSourceId(),
+		SourceType: req.GetSourceType(),
+		Payload:    payload,
+	})
+	if err != nil {
+		return nil, toGRPCError(err)
+	}
+
 	return &ingestv1.ValidateDataResponse{
-		Validation:      validationResultToProto(model.ValidationResult{}),
-		Confidence:      confidenceScoreToProto(model.ConfidenceScore{}),
-		PredictedStatus: ingestv1.IngestStatus_INGEST_STATUS_UNSPECIFIED,
+		Validation:      validationResultToProto(result.Validation),
+		Confidence:      confidenceScoreToProto(result.Confidence),
+		PredictedStatus: ingestStatusToProto(result.PredictedStatus),
 	}, nil
 }
 
